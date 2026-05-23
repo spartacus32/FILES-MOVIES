@@ -1,366 +1,1779 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Bookmark Vault — Gestionnaire de favoris</title>
-    <meta name="description" content="Interface moderne pour organiser vos favoris" />
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      // Suppression du warning Tailwind
-      const originalWarn = console.warn;
-      console.warn = function(...args) {
-        if (args[0] && args[0].includes('cdn.tailwindcss.com')) return;
-        originalWarn.apply(console, args);
-      };
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-      tailwind.config = {
-        theme: {
-          extend: {
-            boxShadow: {
-              soft: '0 24px 80px rgba(15, 23, 42, 0.45)',
-            },
-          },
-        },
-      };
-    </script>
+  <title>Bookmark Vault</title>
 
-    <style>
-      :root { color-scheme: dark; }
-      body {
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+
+    :root{
+
+      --bg:#06070b;
+      --surface:#10131a;
+      --surface-2:#151922;
+      --line:rgba(255,255,255,0.08);
+
+      --text:#f5f7fa;
+      --muted:#9aa4b2;
+
+      --accent:#8ab4ff;
+      --accent-2:#6ee7ff;
+
+      --radius:28px;
+
+      color-scheme:dark;
+
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+
+      background:
+      radial-gradient(circle at top left,
+      rgba(138,180,255,0.10),
+      transparent 20%),
+
+      radial-gradient(circle at bottom right,
+      rgba(110,231,255,0.08),
+      transparent 25%),
+
+      var(--bg);
+
+      color:var(--text);
+
+      font-family:'Inter',sans-serif;
+      min-height:100vh;
+
+      overflow-x:hidden;
+
+    }
+
+    h1,h2,h3{
+      font-family:'Plus Jakarta Sans',sans-serif;
+      letter-spacing:-0.04em;
+    }
+
+    .noise{
+      position:fixed;
+      inset:0;
+      opacity:0.03;
+      pointer-events:none;
+      background-image:url("https://grainy-gradients.vercel.app/noise.svg");
+      z-index:0;
+    }
+
+    .container-main{
+      width:min(1350px,92%);
+      margin:auto;
+      position:relative;
+      z-index:2;
+    }
+
+    .hero{
+      padding-top:110px;
+      padding-bottom:60px;
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+
+      padding:10px 18px;
+
+      border:1px solid var(--line);
+
+      border-radius:999px;
+
+      background:rgba(255,255,255,0.03);
+
+      backdrop-filter:blur(10px);
+
+      color:#c7d2fe;
+
+      font-size:13px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+    }
+
+    .title{
+      font-size:clamp(3rem,8vw,6.5rem);
+      line-height:0.95;
+      margin-top:28px;
+      max-width:900px;
+    }
+
+    .subtitle{
+      margin-top:26px;
+      max-width:700px;
+      color:var(--muted);
+      font-size:1.08rem;
+      line-height:1.9;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:1.7fr 0.8fr;
+      gap:28px;
+      margin-top:60px;
+    }
+
+    .panel{
+      position:relative;
+
+      background:linear-gradient(
+      180deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.02));
+
+      border:1px solid var(--line);
+
+      border-radius:var(--radius);
+
+      padding:30px;
+
+      overflow:hidden;
+
+      backdrop-filter:blur(20px);
+    }
+
+    .panel::before{
+      content:"";
+      position:absolute;
+      inset:0;
+
+      background:
+      linear-gradient(
+      135deg,
+      rgba(255,255,255,0.06),
+      transparent 40%);
+
+      pointer-events:none;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+
+    .search{
+      width:100%;
+      margin-top:24px;
+      display:flex;
+      gap:14px;
+    }
+
+    .input{
+      width:100%;
+
+      background:var(--surface);
+
+      border:1px solid rgba(255,255,255,0.06);
+
+      border-radius:22px;
+
+      padding:18px 20px;
+
+      color:white;
+
+      outline:none;
+
+      transition:0.35s ease;
+    }
+
+    .input:focus{
+      border-color:rgba(138,180,255,0.4);
+      box-shadow:0 0 0 4px rgba(138,180,255,0.08);
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+
+      border-radius:22px;
+
+      padding:16px 22px;
+
+      font-weight:600;
+
+      transition:0.35s ease;
+    }
+
+    .btn-primary{
+      background:linear-gradient(
+      135deg,
+      #dbeafe,
+      #8ab4ff);
+
+      color:#06111f;
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-2px);
+      box-shadow:0 20px 40px rgba(138,180,255,0.18);
+    }
+
+    .btn-secondary{
+      background:rgba(255,255,255,0.04);
+      color:white;
+      border:1px solid rgba(255,255,255,0.05);
+    }
+
+    .btn-secondary:hover{
+      background:rgba(255,255,255,0.08);
+    }
+
+    .cards{
+      margin-top:34px;
+
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:18px;
+    }
+
+    .card{
+      position:relative;
+
+      padding:22px;
+
+      border-radius:24px;
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.02));
+
+      border:1px solid rgba(255,255,255,0.06);
+
+      overflow:hidden;
+
+      transition:0.45s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .card:hover{
+      transform:translateY(-6px);
+      border-color:rgba(138,180,255,0.25);
+    }
+
+    .card::after{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:radial-gradient(circle,
+      rgba(138,180,255,0.12),
+      transparent 50%);
+      opacity:0;
+      transition:0.5s;
+    }
+
+    .card:hover::after{
+      opacity:1;
+    }
+
+    .favicon{
+      width:48px;
+      height:48px;
+      border-radius:14px;
+      background:#0b1017;
+      padding:8px;
+      border:1px solid rgba(255,255,255,0.05);
+    }
+
+    .card-top{
+      display:flex;
+      align-items:flex-start;
+      gap:16px;
+    }
+
+    .card-title{
+      font-size:1rem;
+      font-weight:700;
+      line-height:1.4;
+    }
+
+    .tag{
+      margin-top:12px;
+
+      display:inline-flex;
+
+      padding:8px 14px;
+
+      border-radius:999px;
+
+      background:rgba(138,180,255,0.08);
+
+      color:#cfe0ff;
+
+      font-size:12px;
+
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+    }
+
+    .url{
+      margin-top:20px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.7;
+      word-break:break-all;
+    }
+
+    .floating{
+      position:sticky;
+      top:30px;
+    }
+
+    .toast{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+
+      background:#10151f;
+
+      border:1px solid rgba(255,255,255,0.08);
+
+      color:white;
+
+      padding:18px 22px;
+
+      border-radius:20px;
+
+      opacity:0;
+      transform:translateY(20px);
+
+      transition:0.4s ease;
+
+      z-index:999;
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .import-zone{
+
+      margin-top:28px;
+
+      padding:28px;
+
+      border-radius:26px;
+
+      border:1px dashed rgba(255,255,255,0.12);
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(255,255,255,0.03),
+      rgba(255,255,255,0.015));
+
+      text-align:center;
+
+      transition:
+      transform 0.35s ease,
+      border-color 0.35s ease,
+      background 0.35s ease,
+      box-shadow 0.35s ease;
+
+    }
+
+    .import-zone:hover{
+
+      border-color:
+      rgba(138,180,255,0.35);
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(138,180,255,0.05),
+      rgba(255,255,255,0.02));
+
+    }
+
+    .import-zone.dragover{
+
+      transform:scale(1.02);
+
+      border-color:#8ab4ff;
+
+      box-shadow:
+      0 20px 60px
+      rgba(138,180,255,0.15);
+
+    }
+
+    .import-icon{
+
+      width:72px;
+      height:72px;
+
+      margin:auto auto 18px;
+
+      display:grid;
+      place-items:center;
+
+      border-radius:24px;
+
+      font-size:30px;
+
+      background:
+      linear-gradient(
+      135deg,
+      rgba(138,180,255,0.16),
+      rgba(255,255,255,0.03));
+
+      border:
+      1px solid rgba(255,255,255,0.05);
+
+    }
+
+    @media(max-width:980px){
+
+      .layout{
+        grid-template-columns:1fr;
       }
-      .hero-bg {
-        background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 23%),
-                    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.14), transparent 18%),
-                    linear-gradient(180deg, #020617 0%, #050a15 100%);
+
+      .hero{
+        padding-top:70px;
       }
-      .glass-card {
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.45);
-        backdrop-filter: blur(24px);
+
+      .title{
+        font-size:3.5rem;
       }
-      .favicon {
-        width: 42px;
-        height: 42px;
-        object-fit: contain;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .search{
+        flex-direction:column;
       }
-      .favicon:hover {
-        transform: scale(1.12);
-        filter: brightness(1.1) drop-shadow(0 0 8px rgb(56 189 248 / 0.5));
-      }
-    </style>
-  </head>
-  <body class="min-h-screen hero-bg text-slate-100">
 
-    <main class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <header class="text-center pb-10">
-        <span class="inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.25em] text-sky-200 shadow-sm shadow-sky-500/10">
-          ✨ Gestionnaire de favoris amélioré
-        </span>
-        <h1 class="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl">
-          Bookmark Vault
-        </h1>
-        <p class="mx-auto mt-5 max-w-3xl text-base text-slate-300 sm:text-lg">
-          Organisez vos sites favoris avec une expérience premium : recherche rapide, ajout simple et visualisation élégante.
-        </p>
-      </header>
+    }
 
-      <section class="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
-        <div class="space-y-6">
-          <div class="glass-card rounded-[2rem] p-8">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p class="text-sm uppercase tracking-[0.25em] text-sky-300">Bibliothèque</p>
-                <h2 class="mt-4 text-3xl font-bold text-white">Votre catalogue de favoris</h2>
-                <p class="mt-3 max-w-2xl text-slate-400">
-                  Recherchez dans votre bibliothèque, supprimez les liens obsolètes et organisez par catégories.
-                </p>
-              </div>
-              <div class="inline-flex items-center gap-2 rounded-3xl border border-slate-700/80 bg-slate-950/70 px-4 py-3 text-sm text-slate-300">
-                <span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-                Données stockées localement
-              </div>
-            </div>
+  </style>
+</head>
 
-            <div class="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 w-full">
-                <input id="search" type="search" placeholder="Rechercher un site..." 
-                       class="w-full rounded-3xl border border-slate-700/80 bg-slate-950/90 px-5 py-4 text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition" />
-                <button id="clearSearch" 
-                        class="inline-flex items-center justify-center rounded-3xl bg-slate-900/90 px-5 py-4 text-sm font-semibold text-slate-100 transition hover:bg-slate-800">
-                  Effacer
-                </button>
-              </div>
-              <div class="inline-flex items-center gap-3 rounded-3xl border border-slate-700/80 bg-slate-950/80 px-4 py-3 text-sm text-slate-300">
-                <span id="bookmarkCount">0 favoris</span>
-                <button id="clearAll" class="rounded-full bg-slate-900/80 px-3 py-2 text-xs text-slate-200 transition hover:bg-rose-500/20">
-                  Tout effacer
-                </button>
-              </div>
-            </div>
+<body>
 
-            <div id="categoryFilters" class="mt-6 flex flex-wrap gap-3"></div>
-            <div id="cards" class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
-          </div>
+<div class="noise"></div>
 
-          <!-- Autres sections (Avantages + Conseil) -->
-          <div class="grid gap-5 lg:grid-cols-2">
-            <article class="glass-card rounded-[2rem] p-6">
-              <p class="text-xs uppercase tracking-[0.3em] text-sky-300">Avantages</p>
-              <h3 class="mt-4 text-xl font-semibold text-white">Pourquoi utiliser Bookmark Vault ?</h3>
-              <ul class="mt-5 space-y-3 text-slate-300">
-                <li class="rounded-3xl border border-slate-700/70 bg-slate-950/70 px-4 py-3">🔍 Recherche instantanée</li>
-                <li class="rounded-3xl border border-slate-700/70 bg-slate-950/70 px-4 py-3">⚡ Design fluide et optimisé</li>
-                <li class="rounded-3xl border border-slate-700/70 bg-slate-950/70 px-4 py-3">🗂️ Organisation par catégories</li>
-              </ul>
-            </article>
-            <article class="glass-card rounded-[2rem] p-6">
-              <p class="text-xs uppercase tracking-[0.3em] text-sky-300">Conseil</p>
-              <h3 class="mt-4 text-xl font-semibold text-white">Importez en un clic</h3>
-              <p class="mt-4 text-slate-400 leading-7">
-                Utilisez le bouton « Importer » pour charger un fichier HTML de favoris depuis Chrome, Edge ou Firefox.
-              </p>
-            </article>
-          </div>
+<div class="container-main">
+
+  <section class="hero">
+
+    <div class="eyebrow">
+      ✦ Vault Experience
+    </div>
+
+    <h1 class="title">
+      Organisez votre web avec élégance.
+    </h1>
+
+    <p class="subtitle">
+      Une bibliothèque premium pour centraliser vos favoris,
+      vos outils et vos plateformes dans une interface fluide,
+      minimaliste et pensée comme une véritable application moderne.
+    </p>
+
+  </section>
+
+  <section class="layout">
+
+    <div class="panel">
+
+      <div class="topbar">
+
+        <div>
+          <p style="color:var(--muted);font-size:14px;">
+            Bibliothèque personnelle
+          </p>
+
+          <h2 style="margin-top:10px;font-size:2rem;">
+            Vos favoris
+          </h2>
         </div>
 
-        <!-- Panneau d'ajout -->
-        <aside class="glass-card rounded-[2rem] p-8">
-          <div class="flex items-center gap-4">
-            <div class="grid h-14 w-14 place-items-center rounded-3xl bg-sky-500 text-white shadow-soft text-2xl">
-              ➕
-            </div>
-            <div>
-              <p class="text-sm uppercase tracking-[0.3em] text-sky-300">Ajouter un favori</p>
-              <h2 class="mt-2 text-3xl font-bold text-white">Nouveau lien</h2>
-            </div>
+        <div id="bookmarkCount" class="tag">
+          0 favoris
+        </div>
+
+      </div>
+
+      <div class="search">
+
+        <input
+          id="search"
+          class="input"
+          placeholder="Rechercher un site..."
+          type="search"
+        >
+
+        <button
+          id="clearSearch"
+          class="btn btn-secondary">
+          Effacer
+        </button>
+
+      </div>
+
+      <div id="cards" class="cards"></div>
+
+    </div>
+
+    <aside class="panel floating">
+
+      <h2 style="font-size:2rem;">
+        Ajouter un lien
+      </h2>
+
+      <p style="margin-top:12px;color:var(--muted);line-height:1.8;">
+        Ajoutez rapidement un nouveau site à votre collection.
+      </p>
+
+      <form id="addForm" style="margin-top:30px;display:flex;flex-direction:column;gap:14px;">
+
+        <input
+          id="title"
+          class="input"
+          placeholder="Nom du site"
+          required
+        >
+
+        <input
+          id="url"
+          class="input"
+          placeholder="https://..."
+          required
+        >
+
+        <input
+          id="category"
+          class="input"
+          placeholder="Catégorie"
+        >
+
+        <button
+          type="submit"
+          class="btn btn-primary">
+
+          Ajouter le favori
+
+        </button>
+
+      </form>
+
+      <div class="import-zone" id="importZone">
+
+        <div class="import-icon">
+          ⭳
+        </div>
+
+        <h3 style="font-size:1.1rem;font-weight:700;">
+          Importer des favoris
+        </h3>
+
+        <p style="
+          margin-top:10px;
+          color:var(--muted);
+          line-height:1.7;
+          font-size:14px;
+        ">
+          HTML Chrome/Edge/Firefox, JSON, TXT et préparation PDF.
+        </p>
+
+        <button
+          id="importBtn"
+          type="button"
+          class="btn btn-secondary"
+          style="
+            width:100%;
+            margin-top:20px;
+          ">
+
+          Choisir un fichier
+
+        </button>
+
+        <input
+          id="importFile"
+          type="file"
+          accept=".html,.json,.txt,.pdf"
+          hidden
+        >
+
+      </div>
+
+    </aside>
+
+  </section>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+
+  // =====================================================
+  // FIREBASE CONFIGURATION
+  // =====================================================
+
+  const firebaseConfig = {
+    apiKey: "TON_API_KEY",
+    authDomain: "TON_AUTH_DOMAIN",
+    projectId: "TON_PROJECT_ID",
+    storageBucket: "TON_STORAGE_BUCKET",
+    messagingSenderId: "TON_MESSAGING_SENDER_ID",
+    appId: "TON_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const db = firebase.firestore();
+
+</script>
+
+<script>
+
+  const STORAGE_KEY = "bookmark_vault_v3";
+
+  let items =
+  JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+  const cards = document.getElementById("cards");
+
+  function save(){
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(items)
+    );
+
+  }
+
+  function toast(message){
+
+    const el = document.getElementById("toast");
+
+    el.textContent = message;
+
+    el.classList.add("show");
+
+    setTimeout(() => {
+      el.classList.remove("show");
+    },2500);
+
+  }
+
+  function favicon(url){
+
+    try{
+
+      const domain =
+      new URL(url).hostname;
+
+      return `https://www.google.com/s2/favicons?sz=128&domain=${domain}`;
+
+    }catch{
+
+      return "";
+
+    }
+
+  }
+
+  function render(filter=""){
+
+    cards.innerHTML = "";
+
+    const filtered =
+    items.filter(item => {
+
+      const text =
+      (
+      item.title +
+      item.url +
+      item.category
+      ).toLowerCase();
+
+      return text.includes(filter.toLowerCase());
+
+    });
+
+    document.getElementById("bookmarkCount")
+    .textContent =
+    `${filtered.length} favoris`;
+
+    if(!filtered.length){
+
+      cards.innerHTML = `
+      <div class="card">
+        <p style="color:var(--muted);">
+          Aucun favori trouvé.
+        </p>
+      </div>
+      `;
+
+      return;
+
+    }
+
+    filtered.forEach(item => {
+
+      const card = document.createElement("a");
+
+      card.className = "card";
+
+      card.href = item.url;
+
+      card.target = "_blank";
+
+      card.innerHTML = `
+
+      <div class="card-top">
+
+        <img
+          class="favicon"
+          src="${favicon(item.url)}"
+        >
+
+        <div>
+
+          <div class="card-title">
+            ${item.title}
           </div>
 
-          <form id="addForm" class="mt-8 space-y-4">
-            <input id="title" required placeholder="Nom du site" 
-                   class="w-full rounded-3xl border border-slate-700/80 bg-slate-950/90 px-4 py-4 text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition" />
-            <input id="url" required placeholder="https://exemple.com" 
-                   class="w-full rounded-3xl border border-slate-700/80 bg-slate-950/90 px-4 py-4 text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition" />
-            <input id="category" placeholder="Catégorie (ex: Films)" 
-                   class="w-full rounded-3xl border border-slate-700/80 bg-slate-950/90 px-4 py-4 text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition" />
-            <button type="submit" 
-                    class="w-full rounded-3xl bg-gradient-to-r from-sky-500 to-indigo-500 px-5 py-4 text-base font-semibold text-slate-950 shadow-soft transition hover:from-sky-400 hover:to-indigo-400">
-              Ajouter
-            </button>
-          </form>
-
-          <button id="importBtn" type="button" 
-                  class="mt-6 w-full rounded-3xl border border-slate-700/80 bg-white/5 px-5 py-4 text-sm font-semibold text-slate-100 transition hover:bg-white/10">
-            Importer un fichier HTML
-          </button>
-        </aside>
-      </section>
-
-      <footer class="mt-10 text-center text-sm text-slate-500">
-        Bookmark Vault • Interface moderne pour organiser tes favoris
-      </footer>
-    </main>
-
-    <input id="importFile" type="file" accept=".html" class="hidden" />
-
-    <script>
-      // ====================== SCRIPT PRINCIPAL ======================
-      const STORAGE_KEY = 'bookmark_vault_items_v1';
-
-      function uid() { return Math.random().toString(36).slice(2, 9); }
-
-      function getDomain(url) {
-        try {
-          return new URL(url).hostname.replace(/^www\./, '');
-        } catch { return ''; }
-      }
-
-      function getFaviconUrl(url) {
-        const domain = getDomain(url);
-        return domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : '';
-      }
-
-      function load() {
-        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-        catch(e) { return []; }
-      }
-
-      function save(items) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-      }
-
-      function escapeHtml(s) {
-        return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-      }
-
-      function createCard(item) {
-        const faviconUrl = getFaviconUrl(item.url);
-
-        const a = document.createElement('a');
-        a.href = item.url;
-        a.target = '_blank';
-        a.className = 'group block overflow-hidden rounded-[1.75rem] border border-slate-700/70 bg-slate-950/85 p-6 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-sky-500/30 hover:bg-slate-900/95';
-
-        a.innerHTML = `
-          <div class="flex items-start gap-4 mb-5">
-            <div class="flex-shrink-0">
-              <img src="${faviconUrl}" alt="" class="favicon rounded-xl bg-slate-900 p-1.5 border border-slate-700/50"
-                   onerror="this.onerror=null; this.src='https://via.placeholder.com/42/334155/64748b?text=🔗';">
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-3">
-                <h4 class="text-lg font-semibold text-white transition group-hover:text-sky-300 line-clamp-2 leading-tight">
-                  ${escapeHtml(item.title)}
-                </h4>
-                <button data-id="${item.id}" class="delete-btn flex-shrink-0 rounded-full border border-slate-700/70 px-3 py-1 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/10">
-                  Supprimer
-                </button>
-              </div>
-              <span class="inline-block mt-2 rounded-full bg-slate-900/80 px-3 py-1 text-xs uppercase tracking-[0.3em] text-sky-200">
-                ${escapeHtml(item.category || 'Divers')}
-              </span>
-            </div>
+          <div class="tag">
+            ${item.category || "Divers"}
           </div>
-          <p class="text-sm leading-6 text-slate-400 break-all">${escapeHtml(item.url)}</p>
-        `;
-        return a;
-      }
 
-      let items = load();
-      let selectedCategory = '';
+        </div>
 
-      function setStatus(count) {
-        const el = document.getElementById('bookmarkCount');
-        if (el) el.textContent = `${count} favori${count !== 1 ? 's' : ''}`;
-      }
+      </div>
 
-      function getCategories(items) {
-        return [...new Set(items.map(i => i.category || 'Divers'))]
-          .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
-      }
+      <div class="url">
+        ${item.url}
+      </div>
 
-      function updateCategoryFilters() {
-        const container = document.getElementById('categoryFilters');
-        if (!container) return;
-        container.innerHTML = '';
+      `;
 
-        const categories = getCategories(items);
+      cards.appendChild(card);
 
-        // Toutes les catégories
-        const allBtn = document.createElement('button');
-        allBtn.className = `rounded-full border px-4 py-2 text-sm transition ${selectedCategory === '' ? 'bg-sky-500 text-white border-sky-500' : 'border-slate-700/80 bg-slate-900/90 text-slate-300'}`;
-        allBtn.textContent = 'Toutes les catégories';
-        allBtn.onclick = () => { selectedCategory = ''; render(); };
-        container.appendChild(allBtn);
+    });
 
-        categories.forEach(cat => {
-          const btn = document.createElement('button');
-          btn.className = `rounded-full border px-4 py-2 text-sm transition ${selectedCategory === cat ? 'bg-sky-500 text-white border-sky-500' : 'border-slate-700/80 bg-slate-900/90 text-slate-300'}`;
-          btn.textContent = cat;
-          btn.onclick = () => { selectedCategory = cat; render(); };
-          container.appendChild(btn);
-        });
-      }
+  }
 
-      function render(filter = '') {
-        const container = document.getElementById('cards');
-        if (!container) return;
+  render();
 
-        const term = filter.toLowerCase();
-        const filtered = items.filter(i => {
-          const text = (i.title + ' ' + i.url + ' ' + (i.category || '')).toLowerCase();
-          const catMatch = selectedCategory ? i.category === selectedCategory : true;
-          return catMatch && text.includes(term);
-        });
+  // =====================================================
+  // AJOUT FAVORI
+  // =====================================================
 
-        setStatus(filtered.length);
-        updateCategoryFilters();
+  document
+  .getElementById("addForm")
+  .addEventListener("submit", async e => {
 
-        container.innerHTML = '';
+    e.preventDefault();
 
-        if (!filtered.length) {
-          container.innerHTML = `<div class="rounded-[1.5rem] border border-slate-700/70 bg-slate-950/85 p-6 text-slate-400 text-center py-12">Aucun favori trouvé.</div>`;
-          return;
-        }
+    const title =
+    document.getElementById("title").value.trim();
 
-        filtered.forEach(item => container.appendChild(createCard(item)));
-      }
+    let url =
+    document.getElementById("url").value.trim();
 
-      // ====================== INITIALISATION ======================
-      function init() {
-        render();
+    const category =
+    document.getElementById("category").value.trim();
 
-        // Ajout
-        document.getElementById('addForm').addEventListener('submit', e => {
-          e.preventDefault();
-          const title = document.getElementById('title').value.trim();
-          let url = document.getElementById('url').value.trim();
-          const category = document.getElementById('category').value.trim() || 'Divers';
+    if(!/^https?:\/\//i.test(url)){
+      url = "https://" + url;
+    }
 
-          if (!title || !url) return;
-          if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    const newBookmark = {
+      id:crypto.randomUUID(),
+      title,
+      url,
+      category
+    };
 
-          items.unshift({ id: uid(), title, url, category });
-          save(items);
-          render(document.getElementById('search').value);
-          e.target.reset();
-        });
+    items.unshift(newBookmark);
 
-        // Recherche
-        document.getElementById('search').addEventListener('input', e => render(e.target.value));
-        document.getElementById('clearSearch').addEventListener('click', () => {
-          document.getElementById('search').value = '';
-          render();
-        });
+    save();
 
-        // Suppression
-        document.getElementById('cards').addEventListener('click', e => {
-          const btn = e.target.closest('.delete-btn');
-          if (!btn) return;
-          const id = btn.dataset.id;
-          items = items.filter(i => i.id !== id);
-          save(items);
-          render(document.getElementById('search').value);
-        });
+    render();
 
-        // Tout effacer
-        document.getElementById('clearAll').addEventListener('click', () => {
-          if (items.length && confirm('Supprimer tous les favoris ?')) {
-            items = [];
-            save(items);
-            selectedCategory = '';
-            render();
-          }
-        });
+    e.target.reset();
 
-        // Import
-        document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
-        document.getElementById('importFile').addEventListener('change', async e => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const text = await file.text();
-          const doc = new DOMParser().parseFromString(text, 'text/html');
-          const links = doc.querySelectorAll('a');
+    toast("Favori ajouté avec succès");
 
-          links.forEach(a => {
-            const href = a.href || a.getAttribute('href');
-            if (!href) return;
-            const title = a.textContent.trim() || href;
-            items.unshift({ id: uid(), title, url: href, category: 'Import' });
+  });
+
+  // =====================================================
+  // SEARCH
+  // =====================================================
+
+  document
+  .getElementById("search")
+  .addEventListener("input", e => {
+
+    render(e.target.value);
+
+  });
+
+  // =====================================================
+  // CLEAR SEARCH
+  // =====================================================
+
+  document
+  .getElementById("clearSearch")
+  .addEventListener("click", () => {
+
+    document.getElementById("search").value = "";
+
+    render();
+
+  });
+
+  // =====================================================
+  // IMPORT FAVORIS
+  // =====================================================
+
+  const importBtn =
+  document.getElementById("importBtn");
+
+  const importFile =
+  document.getElementById("importFile");
+
+  const importZone =
+  document.getElementById("importZone");
+
+  importBtn.addEventListener("click", () => {
+
+    importFile.click();
+
+  });
+
+  importFile.addEventListener(
+  "change",
+  async e => {
+
+    const file = e.target.files[0];
+
+    if(!file) return;
+
+    await handleImport(file);
+
+  });
+
+  ["dragenter","dragover"]
+  .forEach(event => {
+
+    importZone.addEventListener(
+    event,
+    e => {
+
+      e.preventDefault();
+
+      importZone.classList.add(
+      "dragover");
+
+    });
+
+  });
+
+  ["dragleave","drop"]
+  .forEach(event => {
+
+    importZone.addEventListener(
+    event,
+    e => {
+
+      e.preventDefault();
+
+      importZone.classList.remove(
+      "dragover");
+
+    });
+
+  });
+
+  importZone.addEventListener(
+  "drop",
+  async e => {
+
+    const file =
+    e.dataTransfer.files[0];
+
+    if(file){
+
+      await handleImport(file);
+
+    }
+
+  });
+
+  async function handleImport(file){
+
+    const extension =
+    file.name
+    .split(".")
+    .pop()
+    .toLowerCase();
+
+    try{
+
+      if(extension === "html"){
+
+        toast("Analyse du fichier HTML...");
+
+        const text =
+        await file.text();
+
+        const doc =
+        new DOMParser()
+        .parseFromString(
+        text,
+        "text/html"
+        );
+
+        const links =
+        doc.querySelectorAll("a");
+
+        let imported = 0;
+
+        links.forEach(link => {
+
+          const href =
+          link.href ||
+          link.getAttribute("href");
+
+          if(!href) return;
+
+          const title =
+          link.textContent.trim()
+          || href;
+
+          const exists =
+          items.some(
+          i => i.url === href
+          );
+
+          if(exists) return;
+
+          items.unshift({
+
+            id:crypto.randomUUID(),
+
+            title,
+
+            url:href,
+
+            category:"Import HTML"
+
           });
 
-          save(items);
-          render();
-          e.target.value = '';
+          imported++;
+
         });
+
+        save();
+
+        render();
+
+        toast(
+        `${imported} favoris importés`
+        );
+
       }
 
-      // Lancer l'application une fois le DOM chargé
-      window.addEventListener('DOMContentLoaded', init);
-    </script>
-  </body>
+      else if(extension === "json"){
+
+        toast("Import JSON...");
+
+        const text =
+        await file.text();
+
+        const data =
+        JSON.parse(text);
+
+        if(Array.isArray(data)){
+
+          let imported = 0;
+
+          data.forEach(item => {
+
+            if(!item.url) return;
+
+            const exists =
+            items.some(
+            i => i.url === item.url
+            );
+
+            if(exists) return;
+
+            items.unshift({
+
+              id:crypto.randomUUID(),
+
+              title:
+              item.title ||
+              "Sans titre",
+
+              url:item.url,
+
+              category:
+              item.category ||
+              "Import JSON"
+
+            });
+
+            imported++;
+
+          });
+
+          save();
+
+          render();
+
+          toast(
+          `${imported} favoris JSON importés`
+          );
+
+        }
+
+      }
+
+      else if(extension === "txt"){
+
+        toast("Lecture TXT...");
+
+        const text =
+        await file.text();
+
+        const lines =
+        text.split("\n");
+
+        let imported = 0;
+
+        lines.forEach(line => {
+
+          const url = line.trim();
+
+          if(!url) return;
+
+          const exists =
+          items.some(
+          i => i.url === url
+          );
+
+          if(exists) return;
+
+          items.unshift({
+
+            id:crypto.randomUUID(),
+
+            title:url,
+
+            url:url,
+
+            category:"Import TXT"
+
+          });
+
+          imported++;
+
+        });
+
+        save();
+
+        render();
+
+        toast(
+        `${imported} liens TXT importés`
+        );
+
+      }
+
+      else if(extension === "pdf"){
+
+        toast(
+        "Support PDF bientôt disponible"
+        );
+
+      }
+
+      else{
+
+        toast(
+        "Format non supporté"
+        );
+
+      }
+
+    }catch(err){
+
+      console.error(err);
+
+      toast(
+      "Erreur pendant l'import"
+      );
+
+    }
+
+  }
+
+</script>
+
+</body>
 </html>
+```
+
+# Système complet Firebase Auth + Cloud Sync + Dashboard
+
+Ajoute ce script Firebase Auth dans le <head> sous Firestore :
+
+```html
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+```
+
+Ajoute ce bouton dans la section hero juste après le paragraphe subtitle :
+
+```html
+<div style="margin-top:30px;display:flex;gap:14px;flex-wrap:wrap;">
+
+  <button id="openAuth" class="btn btn-primary">
+    Connexion
+  </button>
+
+  <button id="logoutBtn" class="btn btn-secondary" style="display:none;">
+    Déconnexion
+  </button>
+
+</div>
+```
+
+Ajoute cette section AVANT le </body> :
+
+```html
+<!-- ===================================================== -->
+<!-- AUTH MODAL -->
+<!-- ===================================================== -->
+
+<div class="auth-overlay" id="authOverlay">
+
+  <div class="auth-modal">
+
+    <div class="auth-header">
+
+      <div>
+        <h2>Connexion</h2>
+        <p>Synchronisez vos favoris dans le cloud.</p>
+      </div>
+
+      <button id="closeAuth">✕</button>
+
+    </div>
+
+    <form id="authForm">
+
+      <input
+        type="email"
+        id="authEmail"
+        placeholder="Adresse email"
+        required
+      >
+
+      <input
+        type="password"
+        id="authPassword"
+        placeholder="Mot de passe"
+        required
+      >
+
+      <button type="submit">
+        Continuer
+      </button>
+
+    </form>
+
+    <button id="googleLogin" class="google-btn">
+      Continuer avec Google
+    </button>
+
+  </div>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- DASHBOARD -->
+<!-- ===================================================== -->
+
+<section id="dashboard" class="panel" style="margin-top:30px;display:none;">
+
+  <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;">
+
+    <div style="display:flex;gap:18px;align-items:center;">
+
+      <img
+        id="userAvatar"
+        src="https://ui-avatars.com/api/?name=User"
+        style="
+          width:70px;
+          height:70px;
+          border-radius:22px;
+          border:1px solid rgba(255,255,255,0.08);
+        "
+      >
+
+      <div>
+        <h2 id="userName">Utilisateur</h2>
+        <p id="userEmail" style="color:var(--muted);margin-top:6px;">
+          Email
+        </p>
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+
+      <button id="createCollection" class="btn btn-secondary">
+        Nouvelle collection
+      </button>
+
+      <button id="shareCollection" class="btn btn-primary">
+        Partager
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+.auth-overlay{
+
+  position:fixed;
+  inset:0;
+
+  background:rgba(0,0,0,0.7);
+
+  backdrop-filter:blur(14px);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  z-index:9999;
+
+  opacity:0;
+  pointer-events:none;
+
+  transition:0.35s ease;
+
+}
+
+.auth-overlay.active{
+
+  opacity:1;
+  pointer-events:auto;
+
+}
+
+.auth-modal{
+
+  width:min(440px,92%);
+
+  background:#0f1218;
+
+  border:1px solid rgba(255,255,255,0.08);
+
+  border-radius:30px;
+
+  padding:32px;
+
+}
+
+.auth-header{
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+}
+
+.auth-header h2{
+  font-size:2rem;
+}
+
+.auth-header p{
+  margin-top:8px;
+  color:var(--muted);
+}
+
+.auth-header button{
+
+  background:none;
+  border:none;
+  color:white;
+  font-size:20px;
+  cursor:pointer;
+
+}
+
+#authForm{
+
+  margin-top:24px;
+
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+
+}
+
+#authForm input{
+
+  width:100%;
+
+  padding:16px 18px;
+
+  border-radius:18px;
+
+  background:#161b23;
+
+  border:1px solid rgba(255,255,255,0.05);
+
+  color:white;
+
+  outline:none;
+
+}
+
+#authForm button,
+.google-btn{
+
+  width:100%;
+
+  padding:16px;
+
+  border:none;
+
+  border-radius:18px;
+
+  cursor:pointer;
+
+  font-weight:600;
+
+}
+
+#authForm button{
+
+  background:#8ab4ff;
+
+  color:#06111f;
+
+}
+
+.google-btn{
+
+  margin-top:14px;
+
+  background:white;
+
+  color:black;
+
+}
+```
+
+Ajoute ce JavaScript tout en bas du script principal :
+
+```javascript
+// =====================================================
+// FIREBASE AUTH
+// =====================================================
+
+const auth = firebase.auth();
+
+const authOverlay =
+document.getElementById("authOverlay");
+
+const openAuth =
+document.getElementById("openAuth");
+
+const closeAuth =
+document.getElementById("closeAuth");
+
+const logoutBtn =
+document.getElementById("logoutBtn");
+
+openAuth.addEventListener("click", () => {
+
+  authOverlay.classList.add("active");
+
+});
+
+closeAuth.addEventListener("click", () => {
+
+  authOverlay.classList.remove("active");
+
+});
+
+// =====================================================
+// EMAIL LOGIN + REGISTER
+// =====================================================
+
+document
+.getElementById("authForm")
+.addEventListener("submit", async e => {
+
+  e.preventDefault();
+
+  const email =
+  document.getElementById("authEmail").value;
+
+  const password =
+  document.getElementById("authPassword").value;
+
+  try{
+
+    await auth.signInWithEmailAndPassword(
+      email,
+      password
+    );
+
+    toast("Connexion réussie");
+
+    authOverlay.classList.remove("active");
+
+  }catch(err){
+
+    if(err.code === "auth/user-not-found"){
+
+      try{
+
+        await auth
+        .createUserWithEmailAndPassword(
+          email,
+          password
+        );
+
+        toast("Compte créé");
+
+        authOverlay.classList.remove("active");
+
+      }catch(createErr){
+
+        toast(createErr.message);
+
+      }
+
+    }else{
+
+      toast(err.message);
+
+    }
+
+  }
+
+});
+
+// =====================================================
+// GOOGLE LOGIN
+// =====================================================
+
+document
+.getElementById("googleLogin")
+.addEventListener("click", async () => {
+
+  try{
+
+    const provider =
+    new firebase.auth.GoogleAuthProvider();
+
+    await auth.signInWithPopup(provider);
+
+    toast("Connecté avec Google");
+
+    authOverlay.classList.remove("active");
+
+  }catch(err){
+
+    toast(err.message);
+
+  }
+
+});
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+logoutBtn.addEventListener("click", async () => {
+
+  await auth.signOut();
+
+  toast("Déconnecté");
+
+});
+
+// =====================================================
+// CLOUD SAVE
+// =====================================================
+
+async function saveBookmarksToCloud(){
+
+  const user = auth.currentUser;
+
+  if(!user) return;
+
+  try{
+
+    await db
+    .collection("users")
+    .doc(user.uid)
+    .set({
+
+      bookmarks:items,
+
+      updatedAt:Date.now(),
+
+      email:user.email,
+
+      displayName:
+      user.displayName || "Utilisateur"
+
+    });
+
+  }catch(err){
+
+    console.error(err);
+
+  }
+
+}
+
+// =====================================================
+// CLOUD LOAD
+// =====================================================
+
+async function loadBookmarksFromCloud(){
+
+  const user = auth.currentUser;
+
+  if(!user) return;
+
+  try{
+
+    const doc = await db
+    .collection("users")
+    .doc(user.uid)
+    .get();
+
+    if(doc.exists){
+
+      const data = doc.data();
+
+      if(data.bookmarks){
+
+        items = data.bookmarks;
+
+        save();
+
+        render();
+
+      }
+
+    }
+
+  }catch(err){
+
+    console.error(err);
+
+  }
+
+}
+
+// =====================================================
+// AUTO SYNC
+// =====================================================
+
+async function syncBookmarks(){
+
+  save();
+
+  render();
+
+  await saveBookmarksToCloud();
+
+}
+
+// =====================================================
+// REALTIME SYNC
+// =====================================================
+
+function enableRealtimeSync(){
+
+  const user = auth.currentUser;
+
+  if(!user) return;
+
+  db.collection("users")
+  .doc(user.uid)
+  .onSnapshot(doc => {
+
+    if(doc.exists){
+
+      const data = doc.data();
+
+      if(data.bookmarks){
+
+        items = data.bookmarks;
+
+        save();
+
+        render();
+
+      }
+
+    }
+
+  });
+
+}
+
+// =====================================================
+// USER STATE
+// =====================================================
+
+auth.onAuthStateChanged(async user => {
+
+  const dashboard =
+  document.getElementById("dashboard");
+
+  if(user){
+
+    openAuth.style.display = "none";
+
+    logoutBtn.style.display = "inline-flex";
+
+    dashboard.style.display = "block";
+
+    document.getElementById("userName")
+    .textContent =
+    user.displayName || "Utilisateur";
+
+    document.getElementById("userEmail")
+    .textContent = user.email;
+
+    document.getElementById("userAvatar")
+    .src =
+    user.photoURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}`;
+
+    await loadBookmarksFromCloud();
+
+    enableRealtimeSync();
+
+  }else{
+
+    dashboard.style.display = "none";
+
+    openAuth.style.display = "inline-flex";
+
+    logoutBtn.style.display = "none";
+
+  }
+
+});
+
+// =====================================================
+// SHARE COLLECTION
+// =====================================================
+
+document
+.getElementById("shareCollection")
+.addEventListener("click", async () => {
+
+  const user = auth.currentUser;
+
+  if(!user){
+
+    toast("Connectez-vous d'abord");
+
+    return;
+
+  }
+
+  const shareId = crypto.randomUUID();
+
+  await db.collection("sharedCollections")
+  .doc(shareId)
+  .set({
+
+    owner:user.uid,
+
+    bookmarks:items,
+
+    createdAt:Date.now()
+
+  });
+
+  const link =
+  `${location.origin}${location.pathname}?share=${shareId}`;
+
+  navigator.clipboard.writeText(link);
+
+  toast("Lien copié dans le presse-papiers");
+
+});
+
+async function loadSharedCollection(){
+
+  const params =
+  new URLSearchParams(location.search);
+
+  const shareId = params.get("share");
+
+  if(!shareId) return;
+
+  const doc = await db
+  .collection("sharedCollections")
+  .doc(shareId)
+  .get();
+
+  if(doc.exists){
+
+    const data = doc.data();
+
+    items = data.bookmarks || [];
+
+    render();
+
+    toast("Collection partagée chargée");
+
+  }
+
+}
+
+loadSharedCollection();
