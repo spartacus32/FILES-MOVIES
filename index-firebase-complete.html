@@ -38,7 +38,7 @@
     .noise{position:fixed;inset:0;opacity:0.03;pointer-events:none;background-image:url("https://grainy-gradients.vercel.app/noise.svg");z-index:0;}
     .container-main{width:min(1350px,92%);margin:auto;position:relative;z-index:2;}
     .hero{padding-top:110px;padding-bottom:60px;}
-    .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,0.03);backdrop-filter:blur(10px);color:#c7d2fe;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;}
+    .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,0.03);backdrop-filter:blur(10px);color:#c7d2e0;font-size:0.9rem;font-weight:500;}
     .title{font-size:clamp(3rem,8vw,6.5rem);line-height:0.95;margin-top:28px;max-width:900px;}
     .subtitle{margin-top:26px;max-width:700px;color:var(--muted);font-size:1.08rem;line-height:1.9;}
     .layout{display:grid;grid-template-columns:1.7fr 0.8fr;gap:28px;margin-top:60px;}
@@ -56,7 +56,7 @@
     .btn-danger{background:rgba(255,100,100,0.15);color:#ff6464;border:1px solid rgba(255,100,100,0.3);padding:10px 14px;font-weight:600;}
     .btn-danger:hover{background:rgba(255,100,100,0.25);}
     .cards{margin-top:34px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;}
-    .card{position:relative;padding:22px;border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.06);overflow:hidden;transition:0.45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;}
+    .card{position:relative;padding:22px;border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.06);overflow:hidden;transition:all 0.3s ease;display:flex;flex-direction:column;}
     .card:hover{transform:translateY(-6px);border-color:rgba(138,180,255,0.25);}
     .card::after{content:"";position:absolute;inset:-40%;background:radial-gradient(circle, rgba(138,180,255,0.12), transparent 50%);opacity:0;transition:0.5s;}
     .card:hover::after{opacity:1;}
@@ -65,16 +65,16 @@
     .card-actions a, .card-actions button{flex:1;text-align:center;text-decoration:none;padding:10px;border-radius:12px;font-size:12px;}
     .favicon{width:48px;height:48px;border-radius:14px;background:#0b1017;padding:8px;border:1px solid rgba(255,255,255,0.05);}
     .card-top{display:flex;align-items:flex-start;gap:16px;}
-    .card-title{font-size:1rem;font-weight:700;line-height:1.4;}
+    .card-title{font-size:1rem;font-weight:700;line-height:1.4;word-break:break-word;}
     .tag{margin-top:12px;display:inline-flex;padding:8px 14px;border-radius:999px;background:rgba(138,180,255,0.08);color:#cfe0ff;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;}
-    .url{margin-top:20px;color:var(--muted);font-size:14px;line-height:1.7;word-break:break-all;}
+    .url{margin-top:20px;color:var(--muted);font-size:14px;line-height:1.7;word-break:break-all;font-family:monospace;}
     .floating{position:sticky;top:30px;}
-    .toast{position:fixed;right:20px;bottom:20px;background:#10151f;border:1px solid rgba(255,255,255,0.08);color:white;padding:18px 22px;border-radius:20px;opacity:0;transform:translateY(20px);transition:0.4s ease;z-index:999;}
+    .toast{position:fixed;right:20px;bottom:20px;background:#10151f;border:1px solid rgba(255,255,255,0.08);color:white;padding:18px 22px;border-radius:20px;opacity:0;transform:translateY(20px);transition:0.35s ease;z-index:9999;}
     .toast.show{opacity:1;transform:translateY(0);}
-    .import-zone{margin-top:28px;padding:28px;border-radius:26px;border:1px dashed rgba(255,255,255,0.12);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));text-align:center;transition:transform 0.35s ease, border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;}
+    .import-zone{margin-top:28px;padding:28px;border-radius:26px;border:1px dashed rgba(255,255,255,0.12);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));text-align:center;cursor:pointer;transition:0.35s ease;}
     .import-zone:hover{border-color:rgba(138,180,255,0.35);background:linear-gradient(180deg, rgba(138,180,255,0.05), rgba(255,255,255,0.02));}
     .import-zone.dragover{transform:scale(1.02);border-color:#8ab4ff;box-shadow:0 20px 60px rgba(138,180,255,0.15);}
-    .import-icon{width:72px;height:72px;margin:auto auto 18px;display:grid;place-items:center;border-radius:24px;font-size:30px;background:linear-gradient(135deg, rgba(138,180,255,0.16), rgba(255,255,255,0.03));border:1px solid rgba(255,255,255,0.05);}
+    .import-icon{width:72px;height:72px;margin:auto auto 18px;display:grid;place-items:center;border-radius:24px;font-size:30px;background:linear-gradient(135deg, rgba(138,180,255,0.16), rgba(110,231,255,0.12));}
     @media(max-width:980px){
       .layout{grid-template-columns:1fr;}
       .hero{padding-top:70px;}
@@ -144,15 +144,17 @@
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   // ============================================
-  // FIREBASE CONFIG - CONFIGURÉE ✅
+  // FIREBASE CONFIG - À CONFIGURER DEPUIS ENV
   // ============================================
+  // IMPORTANT: Utilisez des variables d'environnement en production
+  // Voir: https://firebase.google.com/docs/web/setup
   const firebaseConfig = {
-    apiKey: "AIzaSyBIfjxuH5B_hvZL1Ghb2d3P-1shaMjq8hs",
-    authDomain: "bookmark-erly.firebaseapp.com",
-    projectId: "bookmark-erly",
-    storageBucket: "bookmark-erly.firebasestorage.app",
-    messagingSenderId: "253270665641",
-    appId: "1:253270665641:web:a05fe59a310a5ac1f77cb8"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "YOUR_AUTH_DOMAIN",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "YOUR_STORAGE_BUCKET",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
   };
 
   // Initialize Firebase
@@ -274,6 +276,13 @@
     }
   }
 
+  // ✅ SÉCURITÉ: Échapper les caractères HTML dangereux
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   function render(filter = "") {
     const cards = document.getElementById("cards");
     cards.innerHTML = "";
@@ -290,29 +299,84 @@
     document.getElementById("bookmarkCount").textContent = `${filtered.length} favoris`;
 
     if (!filtered.length) {
-      cards.innerHTML = `<div class="card"><p style="color:var(--muted);">Aucun favori trouvé.</p></div>`;
+      const emptyCard = document.createElement("div");
+      emptyCard.className = "card";
+      const p = document.createElement("p");
+      p.style.color = "var(--muted)";
+      p.textContent = "Aucun favori trouvé.";
+      emptyCard.appendChild(p);
+      cards.appendChild(emptyCard);
       return;
     }
 
     filtered.forEach(item => {
       const card = document.createElement("div");
       card.className = "card";
-      card.innerHTML = `
-        <div class="card-content">
-          <div class="card-top">
-            <img class="favicon" src="${favicon(item.url)}" alt="favicon">
-            <div>
-              <div class="card-title">${item.title}</div>
-              <div class="tag">${item.category || "Divers"}</div>
-            </div>
-          </div>
-          <div class="url">${item.url}</div>
-        </div>
-        <div class="card-actions">
-          <a href="${item.url}" target="_blank" class="btn btn-primary" style="flex: 1; text-decoration: none;">Visiter</a>
-          <button class="btn btn-danger" onclick="window.deleteBookmark('${item.id}')">Supprimer</button>
-        </div>
-      `;
+      
+      // Créer le contenu de la carte de manière sécurisée
+      const cardContent = document.createElement("div");
+      cardContent.className = "card-content";
+      
+      // Card top
+      const cardTop = document.createElement("div");
+      cardTop.className = "card-top";
+      
+      const img = document.createElement("img");
+      img.className = "favicon";
+      img.src = favicon(item.url);
+      img.alt = "favicon";
+      
+      const titleDiv = document.createElement("div");
+      
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "card-title";
+      titleSpan.textContent = item.title; // ✅ textContent = pas d'XSS
+      
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = item.category || "Divers";
+      
+      titleDiv.appendChild(titleSpan);
+      titleDiv.appendChild(tag);
+      
+      cardTop.appendChild(img);
+      cardTop.appendChild(titleDiv);
+      
+      // URL
+      const urlDiv = document.createElement("div");
+      urlDiv.className = "url";
+      urlDiv.textContent = item.url; // ✅ textContent = pas d'XSS
+      
+      cardContent.appendChild(cardTop);
+      cardContent.appendChild(urlDiv);
+      
+      // Card actions
+      const cardActions = document.createElement("div");
+      cardActions.className = "card-actions";
+      
+      const visitLink = document.createElement("a");
+      visitLink.href = item.url;
+      visitLink.target = "_blank";
+      visitLink.rel = "noopener noreferrer"; // ✅ Sécurité: empêcher l'accès à window.opener
+      visitLink.className = "btn btn-primary";
+      visitLink.style.flex = "1";
+      visitLink.style.textDecoration = "none";
+      visitLink.textContent = "Visiter";
+      
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "btn btn-danger";
+      deleteBtn.textContent = "Supprimer";
+      // ✅ SÉCURITÉ: Utiliser addEventListener au lieu d'onclick avec interpolation
+      deleteBtn.addEventListener("click", () => {
+        deleteBookmark(item.id);
+      });
+      
+      cardActions.appendChild(visitLink);
+      cardActions.appendChild(deleteBtn);
+      
+      card.appendChild(cardContent);
+      card.appendChild(cardActions);
+      
       cards.appendChild(card);
     });
   }
