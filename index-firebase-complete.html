@@ -396,6 +396,8 @@
         const links = doc.querySelectorAll("a");
         let imported = 0;
 
+        // Collecter tous les favoris à importer
+        const bookmarksToAdd = [];
         links.forEach(link => {
           const href = link.href || link.getAttribute("href");
           if (!href) return;
@@ -403,14 +405,19 @@
           const exists = items.some(i => i.url === href);
           if (exists) return;
 
-          save({
+          bookmarksToAdd.push({
             title,
             url: href,
             category: "Import HTML",
             createdAt: new Date().toISOString()
           });
-          imported++;
         });
+
+        // Ajouter tous les favoris en une seule opération
+        for (const bookmark of bookmarksToAdd) {
+          await save(bookmark);
+          imported++;
+        }
 
         toast(`✅ ${imported} favoris importés`);
       } else if (extension === "json") {
@@ -420,18 +427,25 @@
         const bookmarks = Array.isArray(data) ? data : data.bookmarks || [];
         let imported = 0;
 
+        // Collecter tous les favoris à importer
+        const bookmarksToAdd = [];
         bookmarks.forEach(bookmark => {
           const exists = items.some(i => i.url === bookmark.url);
           if (exists) return;
 
-          save({
+          bookmarksToAdd.push({
             title: bookmark.title || bookmark.name || "Sans titre",
             url: bookmark.url || bookmark.href || "",
             category: bookmark.category || "Import JSON",
             createdAt: new Date().toISOString()
           });
-          imported++;
         });
+
+        // Ajouter tous les favoris en une seule opération
+        for (const bookmark of bookmarksToAdd) {
+          await save(bookmark);
+          imported++;
+        }
 
         toast(`✅ ${imported} favoris importés`);
       } else if (extension === "txt") {
@@ -440,20 +454,27 @@
         const lines = text.split("\n");
         let imported = 0;
 
+        // Collecter tous les favoris à importer
+        const bookmarksToAdd = [];
         lines.forEach(line => {
           line = line.trim();
           if (!line || !line.startsWith("http")) return;
           const exists = items.some(i => i.url === line);
           if (exists) return;
 
-          save({
+          bookmarksToAdd.push({
             title: new URL(line).hostname,
             url: line,
             category: "Import TXT",
             createdAt: new Date().toISOString()
           });
-          imported++;
         });
+
+        // Ajouter tous les favoris en une seule opération
+        for (const bookmark of bookmarksToAdd) {
+          await save(bookmark);
+          imported++;
+        }
 
         toast(`✅ ${imported} favoris importés`);
       }
