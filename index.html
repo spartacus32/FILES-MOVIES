@@ -15,9 +15,118 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <!-- Firebase v9+ (modular SDK) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // ===== CONFIGURATION FIREBASE =====
+    const firebaseConfig = {
+      apiKey: "TON_API_KEY",
+      authDomain: "TON_AUTH_DOMAIN",
+      projectId: "TON_PROJECT_ID",
+      storageBucket: "TON_STORAGE_BUCKET",
+      messagingSenderId: "TON_MESSAGING_SENDER_ID",
+      appId: "TON_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Variables globales
+    let items = [];
+    let currentUser = null;
+    let useFirebase = false;
+
+    // ===== AUTHENTIFICATION ANONYME =====
+    signInAnonymously(auth)
+      .then(() => {
+        console.log("✅ Authentification anonyme réussie");
+        useFirebase = true;
+        loadFromFirestore();
+      })
+      .catch((error) => {
+        console.warn("⚠️ Firebase indisponible, utilisation de localStorage:", error.message);
+        useFirebase = false;
+        loadFromLocalStorage();
+      });
+
+    // ===== CHARGER DEPUIS FIRESTORE =====
+    async function loadFromFirestore() {
+      try {
+        const snapshot = await getDocs(collection(db, "bookmarks"));
+        items = [];
+        snapshot.forEach((doc) => {
+          items.push({ id: doc.id, ...doc.data() });
+        });
+        console.log("📚 Favoris chargés depuis Firestore:", items.length);
+        render();
+      } catch (error) {
+        console.error("Erreur Firestore:", error);
+        loadFromLocalStorage();
+      }
+    }
+
+    // ===== CHARGER DEPUIS LOCALSTORAGE (Fallback) =====
+    function loadFromLocalStorage() {
+      const STORAGE_KEY = "bookmark_vault_v3";
+      items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      console.log("💾 Favoris chargés depuis localStorage:", items.length);
+      render();
+    }
+
+    // ===== SAUVEGARDER =====
+    async function save(newItem) {
+      if (useFirebase) {
+        try {
+          await addDoc(collection(db, "bookmarks"), newItem);
+          console.log("✅ Favori sauvegardé dans Firestore");
+          loadFromFirestore();
+        } catch (error) {
+          console.error("Erreur Firestore:", error);
+          saveToLocalStorage(newItem);
+        }
+      } else {
+        saveToLocalStorage(newItem);
+      }
+    }
+
+    function saveToLocalStorage(newItem) {
+      const STORAGE_KEY = "bookmark_vault_v3";
+      items.push(newItem);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      console.log("💾 Favori sauvegardé dans localStorage");
+    }
+
+    // ===== SUPPRIMER UN FAVORI =====
+    async function deleteBookmark(bookmarkId) {
+      if (useFirebase) {
+        try {
+          await deleteDoc(doc(db, "bookmarks", bookmarkId));
+          console.log("🗑️ Favori supprimé de Firestore");
+          loadFromFirestore();
+        } catch (error) {
+          console.error("Erreur suppression Firestore:", error);
+        }
+      } else {
+        items = items.filter(item => item.id !== bookmarkId);
+        localStorage.setItem("bookmark_vault_v3", JSON.stringify(items));
+        console.log("🗑️ Favori supprimé de localStorage");
+        render();
+      }
+    }
+
+    // Expose les fonctions au contexte global
+    window.deleteBookmark = deleteBookmark;
+    window.items = items;
+    window.render = render;
+    window.save = save;
+    window.toast = toast;
+    window.favicon = favicon;
+  </script>
 
   <style>
 
@@ -250,6 +359,16 @@
       background:rgba(255,255,255,0.08);
     }
 
+    .btn-danger{
+      background:rgba(255,100,100,0.15);
+      color:#ff6464;
+      border:1px solid rgba(255,100,100,0.3);
+    }
+
+    .btn-danger:hover{
+      background:rgba(255,100,100,0.25);
+    }
+
     .cards{
       margin-top:34px;
 
@@ -276,6 +395,9 @@
       overflow:hidden;
 
       transition:0.45s cubic-bezier(.2,.8,.2,1);
+      
+      display: flex;
+      flex-direction: column;
     }
 
     .card:hover{
@@ -296,6 +418,28 @@
 
     .card:hover::after{
       opacity:1;
+    }
+
+    .card-content {
+      flex: 1;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .card-actions a,
+    .card-actions button {
+      flex: 1;
+      text-align: center;
+      text-decoration: none;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
     }
 
     .favicon{
@@ -603,7 +747,7 @@
           line-height:1.7;
           font-size:14px;
         ">
-          HTML Chrome/Edge/Firefox, JSON, TXT et préparation PDF.
+          HTML Chrome/Edge/Firefox, JSON, TXT.
         </p>
 
         <button
@@ -622,7 +766,7 @@
         <input
           id="importFile"
           type="file"
-          accept=".html,.json,.txt,.pdf"
+          accept=".html,.json,.txt"
           hidden
         >
 
@@ -637,43 +781,6 @@
 <div id="toast" class="toast"></div>
 
 <script>
-
-  // =====================================================
-  // FIREBASE CONFIGURATION
-  // =====================================================
-
-  const firebaseConfig = {
-    apiKey: "TON_API_KEY",
-    authDomain: "TON_AUTH_DOMAIN",
-    projectId: "TON_PROJECT_ID",
-    storageBucket: "TON_STORAGE_BUCKET",
-    messagingSenderId: "TON_MESSAGING_SENDER_ID",
-    appId: "TON_APP_ID"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-
-  const db = firebase.firestore();
-
-</script>
-
-<script>
-
-  const STORAGE_KEY = "bookmark_vault_v3";
-
-  let items =
-  JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-
-  const cards = document.getElementById("cards");
-
-  function save(){
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(items)
-    );
-
-  }
 
   function toast(message){
 
@@ -708,16 +815,17 @@
 
   function render(filter=""){
 
+    const cards = document.getElementById("cards");
     cards.innerHTML = "";
 
     const filtered =
-    items.filter(item => {
+    window.items.filter(item => {
 
       const text =
       (
-      item.title +
-      item.url +
-      item.category
+      (item.title || "") +
+      (item.url || "") +
+      (item.category || "")
       ).toLowerCase();
 
       return text.includes(filter.toLowerCase());
@@ -744,39 +852,47 @@
 
     filtered.forEach(item => {
 
-      const card = document.createElement("a");
+      const card = document.createElement("div");
 
       card.className = "card";
 
-      card.href = item.url;
-
-      card.target = "_blank";
-
       card.innerHTML = `
 
-      <div class="card-top">
+      <div class="card-content">
+        <div class="card-top">
 
-        <img
-          class="favicon"
-          src="${favicon(item.url)}"
-        >
+          <img
+            class="favicon"
+            src="${favicon(item.url)}"
+            alt="favicon"
+          >
 
-        <div>
+          <div>
 
-          <div class="card-title">
-            ${item.title}
-          </div>
+            <div class="card-title">
+              ${item.title}
+            </div>
 
-          <div class="tag">
-            ${item.category || "Divers"}
+            <div class="tag">
+              ${item.category || "Divers"}
+            </div>
+
           </div>
 
         </div>
 
+        <div class="url">
+          ${item.url}
+        </div>
       </div>
 
-      <div class="url">
-        ${item.url}
+      <div class="card-actions">
+        <a href="${item.url}" target="_blank" class="btn btn-primary" style="flex: 1; text-decoration: none;">
+          Visiter
+        </a>
+        <button class="btn btn-danger" onclick="window.deleteBookmark('${item.id}')">
+          Supprimer
+        </button>
       </div>
 
       `;
@@ -787,11 +903,7 @@
 
   }
 
-  render();
-
-  // =====================================================
-  // AJOUT FAVORI
-  // =====================================================
+  // ===== AJOUT FAVORI =====
 
   document
   .getElementById("addForm")
@@ -813,17 +925,13 @@
     }
 
     const newBookmark = {
-      id:crypto.randomUUID(),
       title,
       url,
-      category
+      category,
+      createdAt: new Date().toISOString()
     };
 
-    items.unshift(newBookmark);
-
-    save();
-
-    render();
+    window.save(newBookmark);
 
     e.target.reset();
 
@@ -831,9 +939,7 @@
 
   });
 
-  // =====================================================
-  // SEARCH
-  // =====================================================
+  // ===== SEARCH =====
 
   document
   .getElementById("search")
@@ -843,9 +949,7 @@
 
   });
 
-  // =====================================================
-  // CLEAR SEARCH
-  // =====================================================
+  // ===== CLEAR SEARCH =====
 
   document
   .getElementById("clearSearch")
@@ -857,9 +961,7 @@
 
   });
 
-  // =====================================================
-  // IMPORT FAVORIS
-  // =====================================================
+  // ===== IMPORT FAVORIS =====
 
   const importBtn =
   document.getElementById("importBtn");
@@ -977,169 +1079,103 @@
           || href;
 
           const exists =
-          items.some(
+          window.items.some(
           i => i.url === href
           );
 
           if(exists) return;
 
-          items.unshift({
-
-            id:crypto.randomUUID(),
-
+          const newBookmark = {
             title,
+            url: href,
+            category: "Import HTML",
+            createdAt: new Date().toISOString()
+          };
 
-            url:href,
-
-            category:"Import HTML"
-
-          });
+          window.save(newBookmark);
 
           imported++;
 
         });
 
-        save();
+        toast(`✅ ${imported} favoris importés`);
 
-        render();
+      } else if(extension === "json"){
 
-        toast(
-        `${imported} favoris importés`
-        );
+        toast("Analyse du fichier JSON...");
 
-      }
+        const text = await file.text();
 
-      else if(extension === "json"){
+        const data = JSON.parse(text);
 
-        toast("Import JSON...");
+        let imported = 0;
 
-        const text =
-        await file.text();
+        const bookmarks = Array.isArray(data) ? data : data.bookmarks || [];
 
-        const data =
-        JSON.parse(text);
+        bookmarks.forEach(bookmark => {
 
-        if(Array.isArray(data)){
+          const exists = window.items.some(i => i.url === bookmark.url);
 
-          let imported = 0;
+          if(exists) return;
 
-          data.forEach(item => {
+          const newBookmark = {
+            title: bookmark.title || bookmark.name || "Sans titre",
+            url: bookmark.url || bookmark.href || "",
+            category: bookmark.category || "Import JSON",
+            createdAt: new Date().toISOString()
+          };
 
-            if(!item.url) return;
-
-            const exists =
-            items.some(
-            i => i.url === item.url
-            );
-
-            if(exists) return;
-
-            items.unshift({
-
-              id:crypto.randomUUID(),
-
-              title:
-              item.title ||
-              "Sans titre",
-
-              url:item.url,
-
-              category:
-              item.category ||
-              "Import JSON"
-
-            });
-
+          if(newBookmark.url) {
+            window.save(newBookmark);
             imported++;
+          }
 
-          });
+        });
 
-          save();
+        toast(`✅ ${imported} favoris importés`);
 
-          render();
+      } else if(extension === "txt"){
 
-          toast(
-          `${imported} favoris JSON importés`
-          );
+        toast("Analyse du fichier TXT...");
 
-        }
+        const text = await file.text();
 
-      }
-
-      else if(extension === "txt"){
-
-        toast("Lecture TXT...");
-
-        const text =
-        await file.text();
-
-        const lines =
-        text.split("\n");
+        const lines = text.split("\n");
 
         let imported = 0;
 
         lines.forEach(line => {
 
-          const url = line.trim();
+          line = line.trim();
 
-          if(!url) return;
+          if(!line || !line.startsWith("http")) return;
 
-          const exists =
-          items.some(
-          i => i.url === url
-          );
+          const exists = window.items.some(i => i.url === line);
 
           if(exists) return;
 
-          items.unshift({
+          const newBookmark = {
+            title: new URL(line).hostname,
+            url: line,
+            category: "Import TXT",
+            createdAt: new Date().toISOString()
+          };
 
-            id:crypto.randomUUID(),
-
-            title:url,
-
-            url:url,
-
-            category:"Import TXT"
-
-          });
+          window.save(newBookmark);
 
           imported++;
 
         });
 
-        save();
-
-        render();
-
-        toast(
-        `${imported} liens TXT importés`
-        );
+        toast(`✅ ${imported} favoris importés`);
 
       }
 
-      else if(extension === "pdf"){
+    } catch(error){
 
-        toast(
-        "Support PDF bientôt disponible"
-        );
+      console.error("Erreur import:", error);
 
-      }
-
-      else{
-
-        toast(
-        "Format non supporté"
-        );
-
-      }
-
-    }catch(err){
-
-      console.error(err);
-
-      toast(
-      "Erreur pendant l'import"
-      );
+      toast("❌ Erreur lors de l'import");
 
     }
 
@@ -1149,631 +1185,3 @@
 
 </body>
 </html>
-```
-
-# Système complet Firebase Auth + Cloud Sync + Dashboard
-
-Ajoute ce script Firebase Auth dans le <head> sous Firestore :
-
-```html
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-```
-
-Ajoute ce bouton dans la section hero juste après le paragraphe subtitle :
-
-```html
-<div style="margin-top:30px;display:flex;gap:14px;flex-wrap:wrap;">
-
-  <button id="openAuth" class="btn btn-primary">
-    Connexion
-  </button>
-
-  <button id="logoutBtn" class="btn btn-secondary" style="display:none;">
-    Déconnexion
-  </button>
-
-</div>
-```
-
-Ajoute cette section AVANT le </body> :
-
-```html
-<!-- ===================================================== -->
-<!-- AUTH MODAL -->
-<!-- ===================================================== -->
-
-<div class="auth-overlay" id="authOverlay">
-
-  <div class="auth-modal">
-
-    <div class="auth-header">
-
-      <div>
-        <h2>Connexion</h2>
-        <p>Synchronisez vos favoris dans le cloud.</p>
-      </div>
-
-      <button id="closeAuth">✕</button>
-
-    </div>
-
-    <form id="authForm">
-
-      <input
-        type="email"
-        id="authEmail"
-        placeholder="Adresse email"
-        required
-      >
-
-      <input
-        type="password"
-        id="authPassword"
-        placeholder="Mot de passe"
-        required
-      >
-
-      <button type="submit">
-        Continuer
-      </button>
-
-    </form>
-
-    <button id="googleLogin" class="google-btn">
-      Continuer avec Google
-    </button>
-
-  </div>
-
-</div>
-
-<!-- ===================================================== -->
-<!-- DASHBOARD -->
-<!-- ===================================================== -->
-
-<section id="dashboard" class="panel" style="margin-top:30px;display:none;">
-
-  <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;">
-
-    <div style="display:flex;gap:18px;align-items:center;">
-
-      <img
-        id="userAvatar"
-        src="https://ui-avatars.com/api/?name=User"
-        style="
-          width:70px;
-          height:70px;
-          border-radius:22px;
-          border:1px solid rgba(255,255,255,0.08);
-        "
-      >
-
-      <div>
-        <h2 id="userName">Utilisateur</h2>
-        <p id="userEmail" style="color:var(--muted);margin-top:6px;">
-          Email
-        </p>
-      </div>
-
-    </div>
-
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-
-      <button id="createCollection" class="btn btn-secondary">
-        Nouvelle collection
-      </button>
-
-      <button id="shareCollection" class="btn btn-primary">
-        Partager
-      </button>
-
-    </div>
-
-  </div>
-
-</section>
-.auth-overlay{
-
-  position:fixed;
-  inset:0;
-
-  background:rgba(0,0,0,0.7);
-
-  backdrop-filter:blur(14px);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  z-index:9999;
-
-  opacity:0;
-  pointer-events:none;
-
-  transition:0.35s ease;
-
-}
-
-.auth-overlay.active{
-
-  opacity:1;
-  pointer-events:auto;
-
-}
-
-.auth-modal{
-
-  width:min(440px,92%);
-
-  background:#0f1218;
-
-  border:1px solid rgba(255,255,255,0.08);
-
-  border-radius:30px;
-
-  padding:32px;
-
-}
-
-.auth-header{
-
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-
-}
-
-.auth-header h2{
-  font-size:2rem;
-}
-
-.auth-header p{
-  margin-top:8px;
-  color:var(--muted);
-}
-
-.auth-header button{
-
-  background:none;
-  border:none;
-  color:white;
-  font-size:20px;
-  cursor:pointer;
-
-}
-
-#authForm{
-
-  margin-top:24px;
-
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-
-}
-
-#authForm input{
-
-  width:100%;
-
-  padding:16px 18px;
-
-  border-radius:18px;
-
-  background:#161b23;
-
-  border:1px solid rgba(255,255,255,0.05);
-
-  color:white;
-
-  outline:none;
-
-}
-
-#authForm button,
-.google-btn{
-
-  width:100%;
-
-  padding:16px;
-
-  border:none;
-
-  border-radius:18px;
-
-  cursor:pointer;
-
-  font-weight:600;
-
-}
-
-#authForm button{
-
-  background:#8ab4ff;
-
-  color:#06111f;
-
-}
-
-.google-btn{
-
-  margin-top:14px;
-
-  background:white;
-
-  color:black;
-
-}
-```
-
-Ajoute ce JavaScript tout en bas du script principal :
-
-```javascript
-// =====================================================
-// FIREBASE AUTH
-// =====================================================
-
-const auth = firebase.auth();
-
-const authOverlay =
-document.getElementById("authOverlay");
-
-const openAuth =
-document.getElementById("openAuth");
-
-const closeAuth =
-document.getElementById("closeAuth");
-
-const logoutBtn =
-document.getElementById("logoutBtn");
-
-openAuth.addEventListener("click", () => {
-
-  authOverlay.classList.add("active");
-
-});
-
-closeAuth.addEventListener("click", () => {
-
-  authOverlay.classList.remove("active");
-
-});
-
-// =====================================================
-// EMAIL LOGIN + REGISTER
-// =====================================================
-
-document
-.getElementById("authForm")
-.addEventListener("submit", async e => {
-
-  e.preventDefault();
-
-  const email =
-  document.getElementById("authEmail").value;
-
-  const password =
-  document.getElementById("authPassword").value;
-
-  try{
-
-    await auth.signInWithEmailAndPassword(
-      email,
-      password
-    );
-
-    toast("Connexion réussie");
-
-    authOverlay.classList.remove("active");
-
-  }catch(err){
-
-    if(err.code === "auth/user-not-found"){
-
-      try{
-
-        await auth
-        .createUserWithEmailAndPassword(
-          email,
-          password
-        );
-
-        toast("Compte créé");
-
-        authOverlay.classList.remove("active");
-
-      }catch(createErr){
-
-        toast(createErr.message);
-
-      }
-
-    }else{
-
-      toast(err.message);
-
-    }
-
-  }
-
-});
-
-// =====================================================
-// GOOGLE LOGIN
-// =====================================================
-
-document
-.getElementById("googleLogin")
-.addEventListener("click", async () => {
-
-  try{
-
-    const provider =
-    new firebase.auth.GoogleAuthProvider();
-
-    await auth.signInWithPopup(provider);
-
-    toast("Connecté avec Google");
-
-    authOverlay.classList.remove("active");
-
-  }catch(err){
-
-    toast(err.message);
-
-  }
-
-});
-
-// =====================================================
-// LOGOUT
-// =====================================================
-
-logoutBtn.addEventListener("click", async () => {
-
-  await auth.signOut();
-
-  toast("Déconnecté");
-
-});
-
-// =====================================================
-// CLOUD SAVE
-// =====================================================
-
-async function saveBookmarksToCloud(){
-
-  const user = auth.currentUser;
-
-  if(!user) return;
-
-  try{
-
-    await db
-    .collection("users")
-    .doc(user.uid)
-    .set({
-
-      bookmarks:items,
-
-      updatedAt:Date.now(),
-
-      email:user.email,
-
-      displayName:
-      user.displayName || "Utilisateur"
-
-    });
-
-  }catch(err){
-
-    console.error(err);
-
-  }
-
-}
-
-// =====================================================
-// CLOUD LOAD
-// =====================================================
-
-async function loadBookmarksFromCloud(){
-
-  const user = auth.currentUser;
-
-  if(!user) return;
-
-  try{
-
-    const doc = await db
-    .collection("users")
-    .doc(user.uid)
-    .get();
-
-    if(doc.exists){
-
-      const data = doc.data();
-
-      if(data.bookmarks){
-
-        items = data.bookmarks;
-
-        save();
-
-        render();
-
-      }
-
-    }
-
-  }catch(err){
-
-    console.error(err);
-
-  }
-
-}
-
-// =====================================================
-// AUTO SYNC
-// =====================================================
-
-async function syncBookmarks(){
-
-  save();
-
-  render();
-
-  await saveBookmarksToCloud();
-
-}
-
-// =====================================================
-// REALTIME SYNC
-// =====================================================
-
-function enableRealtimeSync(){
-
-  const user = auth.currentUser;
-
-  if(!user) return;
-
-  db.collection("users")
-  .doc(user.uid)
-  .onSnapshot(doc => {
-
-    if(doc.exists){
-
-      const data = doc.data();
-
-      if(data.bookmarks){
-
-        items = data.bookmarks;
-
-        save();
-
-        render();
-
-      }
-
-    }
-
-  });
-
-}
-
-// =====================================================
-// USER STATE
-// =====================================================
-
-auth.onAuthStateChanged(async user => {
-
-  const dashboard =
-  document.getElementById("dashboard");
-
-  if(user){
-
-    openAuth.style.display = "none";
-
-    logoutBtn.style.display = "inline-flex";
-
-    dashboard.style.display = "block";
-
-    document.getElementById("userName")
-    .textContent =
-    user.displayName || "Utilisateur";
-
-    document.getElementById("userEmail")
-    .textContent = user.email;
-
-    document.getElementById("userAvatar")
-    .src =
-    user.photoURL ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}`;
-
-    await loadBookmarksFromCloud();
-
-    enableRealtimeSync();
-
-  }else{
-
-    dashboard.style.display = "none";
-
-    openAuth.style.display = "inline-flex";
-
-    logoutBtn.style.display = "none";
-
-  }
-
-});
-
-// =====================================================
-// SHARE COLLECTION
-// =====================================================
-
-document
-.getElementById("shareCollection")
-.addEventListener("click", async () => {
-
-  const user = auth.currentUser;
-
-  if(!user){
-
-    toast("Connectez-vous d'abord");
-
-    return;
-
-  }
-
-  const shareId = crypto.randomUUID();
-
-  await db.collection("sharedCollections")
-  .doc(shareId)
-  .set({
-
-    owner:user.uid,
-
-    bookmarks:items,
-
-    createdAt:Date.now()
-
-  });
-
-  const link =
-  `${location.origin}${location.pathname}?share=${shareId}`;
-
-  navigator.clipboard.writeText(link);
-
-  toast("Lien copié dans le presse-papiers");
-
-});
-
-async function loadSharedCollection(){
-
-  const params =
-  new URLSearchParams(location.search);
-
-  const shareId = params.get("share");
-
-  if(!shareId) return;
-
-  const doc = await db
-  .collection("sharedCollections")
-  .doc(shareId)
-  .get();
-
-  if(doc.exists){
-
-    const data = doc.data();
-
-    items = data.bookmarks || [];
-
-    render();
-
-    toast("Collection partagée chargée");
-
-  }
-
-}
-
-loadSharedCollection();
