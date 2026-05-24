@@ -15,62 +15,11 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase v9+ (modular SDK) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    // ===== CONFIGURATION FIREBASE =====
-    const firebaseConfig = {
-      apiKey: "TON_API_KEY",
-      authDomain: "TON_AUTH_DOMAIN",
-      projectId: "TON_PROJECT_ID",
-      storageBucket: "TON_STORAGE_BUCKET",
-      messagingSenderId: "TON_MESSAGING_SENDER_ID",
-      appId: "TON_APP_ID"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
+  <script>
     // Variables globales
     let items = [];
-    let currentUser = null;
-    let useFirebase = false;
 
-    // ===== AUTHENTIFICATION ANONYME =====
-    signInAnonymously(auth)
-      .then(() => {
-        console.log("✅ Authentification anonyme réussie");
-        useFirebase = true;
-        loadFromFirestore();
-      })
-      .catch((error) => {
-        console.warn("⚠️ Firebase indisponible, utilisation de localStorage:", error.message);
-        useFirebase = false;
-        loadFromLocalStorage();
-      });
-
-    // ===== CHARGER DEPUIS FIRESTORE =====
-    async function loadFromFirestore() {
-      try {
-        const snapshot = await getDocs(collection(db, "bookmarks"));
-        items = [];
-        snapshot.forEach((doc) => {
-          items.push({ id: doc.id, ...doc.data() });
-        });
-        console.log("📚 Favoris chargés depuis Firestore:", items.length);
-        render();
-      } catch (error) {
-        console.error("Erreur Firestore:", error);
-        loadFromLocalStorage();
-      }
-    }
-
-    // ===== CHARGER DEPUIS LOCALSTORAGE (Fallback) =====
+    // ===== CHARGER DEPUIS LOCALSTORAGE =====
     function loadFromLocalStorage() {
       const STORAGE_KEY = "bookmark_vault_v3";
       items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -79,45 +28,25 @@
     }
 
     // ===== SAUVEGARDER =====
-    async function save(newItem) {
-      if (useFirebase) {
-        try {
-          await addDoc(collection(db, "bookmarks"), newItem);
-          console.log("✅ Favori sauvegardé dans Firestore");
-          loadFromFirestore();
-        } catch (error) {
-          console.error("Erreur Firestore:", error);
-          saveToLocalStorage(newItem);
-        }
-      } else {
-        saveToLocalStorage(newItem);
-      }
-    }
-
-    function saveToLocalStorage(newItem) {
+    function save(newItem) {
       const STORAGE_KEY = "bookmark_vault_v3";
+      newItem.id = Date.now().toString();
       items.push(newItem);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
       console.log("💾 Favori sauvegardé dans localStorage");
+      render();
     }
 
     // ===== SUPPRIMER UN FAVORI =====
-    async function deleteBookmark(bookmarkId) {
-      if (useFirebase) {
-        try {
-          await deleteDoc(doc(db, "bookmarks", bookmarkId));
-          console.log("🗑️ Favori supprimé de Firestore");
-          loadFromFirestore();
-        } catch (error) {
-          console.error("Erreur suppression Firestore:", error);
-        }
-      } else {
-        items = items.filter(item => item.id !== bookmarkId);
-        localStorage.setItem("bookmark_vault_v3", JSON.stringify(items));
-        console.log("🗑️ Favori supprimé de localStorage");
-        render();
-      }
+    function deleteBookmark(bookmarkId) {
+      items = items.filter(item => item.id !== bookmarkId);
+      localStorage.setItem("bookmark_vault_v3", JSON.stringify(items));
+      console.log("🗑️ Favori supprimé de localStorage");
+      render();
     }
+
+    // Charger au démarrage
+    loadFromLocalStorage();
 
     // Expose les fonctions au contexte global
     window.deleteBookmark = deleteBookmark;
@@ -999,10 +928,11 @@
 
       e.preventDefault();
 
-      importZone.classList.add(
-      "dragover");
+      importZone.classList.add("dragover");
 
-    });
+    }
+
+    );
 
   });
 
@@ -1013,171 +943,95 @@
     event,
     e => {
 
-      e.preventDefault();
+      importZone.classList.remove("dragover");
 
-      importZone.classList.remove(
-      "dragover");
+    }
 
-    });
+    );
 
   });
 
-  importZone.addEventListener(
-  "drop",
-  async e => {
+  importZone.addEventListener("drop", async e => {
 
-    const file =
-    e.dataTransfer.files[0];
+    e.preventDefault();
 
-    if(file){
+    const files = e.dataTransfer.files;
 
-      await handleImport(file);
-
-    }
+    if(files.length) await handleImport(files[0]);
 
   });
 
   async function handleImport(file){
 
-    const extension =
-    file.name
-    .split(".")
-    .pop()
-    .toLowerCase();
+    const reader = new FileReader();
 
-    try{
+    reader.onload = async event => {
 
-      if(extension === "html"){
+      const content = event.target.result;
 
-        toast("Analyse du fichier HTML...");
+      let parsed = [];
 
-        const text =
-        await file.text();
+      if(file.name.endsWith(".json")){
 
-        const doc =
-        new DOMParser()
-        .parseFromString(
-        text,
-        "text/html"
-        );
+        try{
 
-        const links =
-        doc.querySelectorAll("a");
+          parsed = JSON.parse(content);
 
-        let imported = 0;
+        }catch{
 
-        links.forEach(link => {
+          toast("Erreur : JSON invalide");
 
-          const href =
-          link.href ||
-          link.getAttribute("href");
+          return;
 
-          if(!href) return;
-
-          const title =
-          link.textContent.trim()
-          || href;
-
-          const exists =
-          window.items.some(
-          i => i.url === href
-          );
-
-          if(exists) return;
-
-          const newBookmark = {
-            title,
-            url: href,
-            category: "Import HTML",
-            createdAt: new Date().toISOString()
-          };
-
-          window.save(newBookmark);
-
-          imported++;
-
-        });
-
-        toast(`✅ ${imported} favoris importés`);
-
-      } else if(extension === "json"){
-
-        toast("Analyse du fichier JSON...");
-
-        const text = await file.text();
-
-        const data = JSON.parse(text);
-
-        let imported = 0;
-
-        const bookmarks = Array.isArray(data) ? data : data.bookmarks || [];
-
-        bookmarks.forEach(bookmark => {
-
-          const exists = window.items.some(i => i.url === bookmark.url);
-
-          if(exists) return;
-
-          const newBookmark = {
-            title: bookmark.title || bookmark.name || "Sans titre",
-            url: bookmark.url || bookmark.href || "",
-            category: bookmark.category || "Import JSON",
-            createdAt: new Date().toISOString()
-          };
-
-          if(newBookmark.url) {
-            window.save(newBookmark);
-            imported++;
-          }
-
-        });
-
-        toast(`✅ ${imported} favoris importés`);
-
-      } else if(extension === "txt"){
-
-        toast("Analyse du fichier TXT...");
-
-        const text = await file.text();
-
-        const lines = text.split("\n");
-
-        let imported = 0;
-
-        lines.forEach(line => {
-
-          line = line.trim();
-
-          if(!line || !line.startsWith("http")) return;
-
-          const exists = window.items.some(i => i.url === line);
-
-          if(exists) return;
-
-          const newBookmark = {
-            title: new URL(line).hostname,
-            url: line,
-            category: "Import TXT",
-            createdAt: new Date().toISOString()
-          };
-
-          window.save(newBookmark);
-
-          imported++;
-
-        });
-
-        toast(`✅ ${imported} favoris importés`);
+        }
 
       }
 
-    } catch(error){
+      else if(file.name.endsWith(".html")){
 
-      console.error("Erreur import:", error);
+        const parser = new DOMParser();
 
-      toast("❌ Erreur lors de l'import");
+        const doc = parser.parseFromString(content, "text/html");
 
-    }
+        const links = doc.querySelectorAll("a[href]");
+
+        parsed = Array.from(links).map(a => ({
+
+          title: a.textContent || a.href,
+
+          url: a.href,
+
+          category: "Importé"
+
+        }));
+
+      }
+
+      else if(file.name.endsWith(".txt")){
+
+        parsed = content.split("\n").filter(line => line.trim()).map(line => ({
+
+          title: line.trim(),
+
+          url: line.trim(),
+
+          category: "Importé"
+
+        }));
+
+      }
+
+      if(parsed.length){
+
+        parsed.forEach(item => window.save(item));
+
+        toast(`${parsed.length} favoris importés`);
+
+      }
+
+    };
+
+    reader.readAsText(file);
 
   }
 
