@@ -3,553 +3,1104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bookmark Vault - Firebase Edition</title>
+
+  <title>Bookmark Vault</title>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
+
     :root{
+
       --bg:#06070b;
       --surface:#10131a;
       --surface-2:#151922;
       --line:rgba(255,255,255,0.08);
+
       --text:#f5f7fa;
       --muted:#9aa4b2;
+
       --accent:#8ab4ff;
       --accent-2:#6ee7ff;
+
       --radius:28px;
+
       color-scheme:dark;
+
     }
-    *{margin:0;padding:0;box-sizing:border-box;}
-    html{scroll-behavior:smooth;}
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
     body{
+
       background:
-      radial-gradient(circle at top left, rgba(138,180,255,0.10), transparent 20%),
-      radial-gradient(circle at bottom right, rgba(110,231,255,0.08), transparent 25%),
+      radial-gradient(circle at top left,
+      rgba(138,180,255,0.10),
+      transparent 20%),
+
+      radial-gradient(circle at bottom right,
+      rgba(110,231,255,0.08),
+      transparent 25%),
+
       var(--bg);
+
       color:var(--text);
+
       font-family:'Inter',sans-serif;
       min-height:100vh;
+
       overflow-x:hidden;
+
     }
-    h1,h2,h3{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.04em;}
-    .noise{position:fixed;inset:0;opacity:0.03;pointer-events:none;background-image:url("https://grainy-gradients.vercel.app/noise.svg");z-index:0;}
-    .container-main{width:min(1350px,92%);margin:auto;position:relative;z-index:2;}
-    .hero{padding-top:110px;padding-bottom:60px;}
-    .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,0.03);backdrop-filter:blur(10px);color:#c7d2e0;font-size:0.9rem;font-weight:500;}
-    .title{font-size:clamp(3rem,8vw,6.5rem);line-height:0.95;margin-top:28px;max-width:900px;}
-    .subtitle{margin-top:26px;max-width:700px;color:var(--muted);font-size:1.08rem;line-height:1.9;}
-    .layout{display:grid;grid-template-columns:1.7fr 0.8fr;gap:28px;margin-top:60px;}
-    .panel{position:relative;background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));border:1px solid var(--line);border-radius:var(--radius);padding:30px;overflow:hidden;backdrop-filter:blur(20px);}
-    .panel::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg, rgba(255,255,255,0.06), transparent 40%);pointer-events:none;}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
-    .search{width:100%;margin-top:24px;display:flex;gap:14px;}
-    .input{width:100%;background:var(--surface);border:1px solid rgba(255,255,255,0.06);border-radius:22px;padding:18px 20px;color:white;outline:none;transition:0.35s ease;}
-    .input:focus{border-color:rgba(138,180,255,0.4);box-shadow:0 0 0 4px rgba(138,180,255,0.08);}
-    .btn{border:none;cursor:pointer;border-radius:22px;padding:16px 22px;font-weight:600;transition:0.35s ease;}
-    .btn-primary{background:linear-gradient(135deg, #dbeafe, #8ab4ff);color:#06111f;}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 20px 40px rgba(138,180,255,0.18);}
-    .btn-secondary{background:rgba(255,255,255,0.04);color:white;border:1px solid rgba(255,255,255,0.05);}
-    .btn-secondary:hover{background:rgba(255,255,255,0.08);}
-    .btn-danger{background:rgba(255,100,100,0.15);color:#ff6464;border:1px solid rgba(255,100,100,0.3);padding:10px 14px;font-weight:600;}
-    .btn-danger:hover{background:rgba(255,100,100,0.25);}
-    .cards{margin-top:34px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;}
-    .card{position:relative;padding:22px;border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.06);overflow:hidden;transition:all 0.3s ease;display:flex;flex-direction:column;}
-    .card:hover{transform:translateY(-6px);border-color:rgba(138,180,255,0.25);}
-    .card::after{content:"";position:absolute;inset:-40%;background:radial-gradient(circle, rgba(138,180,255,0.12), transparent 50%);opacity:0;transition:0.5s;}
-    .card:hover::after{opacity:1;}
-    .card-content{flex:1;}
-    .card-actions{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);}
-    .card-actions a, .card-actions button{flex:1;text-align:center;text-decoration:none;padding:10px;border-radius:12px;font-size:12px;}
-    .favicon{width:48px;height:48px;border-radius:14px;background:#0b1017;padding:8px;border:1px solid rgba(255,255,255,0.05);}
-    .card-top{display:flex;align-items:flex-start;gap:16px;}
-    .card-title{font-size:1rem;font-weight:700;line-height:1.4;word-break:break-word;}
-    .tag{margin-top:12px;display:inline-flex;padding:8px 14px;border-radius:999px;background:rgba(138,180,255,0.08);color:#cfe0ff;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;}
-    .url{margin-top:20px;color:var(--muted);font-size:14px;line-height:1.7;word-break:break-all;font-family:monospace;}
-    .floating{position:sticky;top:30px;}
-    .toast{position:fixed;right:20px;bottom:20px;background:#10151f;border:1px solid rgba(255,255,255,0.08);color:white;padding:18px 22px;border-radius:20px;opacity:0;transform:translateY(20px);transition:0.35s ease;z-index:9999;}
-    .toast.show{opacity:1;transform:translateY(0);}
-    .import-zone{margin-top:28px;padding:28px;border-radius:26px;border:1px dashed rgba(255,255,255,0.12);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));text-align:center;cursor:pointer;transition:0.35s ease;}
-    .import-zone:hover{border-color:rgba(138,180,255,0.35);background:linear-gradient(180deg, rgba(138,180,255,0.05), rgba(255,255,255,0.02));}
-    .import-zone.dragover{transform:scale(1.02);border-color:#8ab4ff;box-shadow:0 20px 60px rgba(138,180,255,0.15);}
-    .import-icon{width:72px;height:72px;margin:auto auto 18px;display:grid;place-items:center;border-radius:24px;font-size:30px;background:linear-gradient(135deg, rgba(138,180,255,0.16), rgba(110,231,255,0.12));}
+
+    h1,h2,h3{
+      font-family:'Plus Jakarta Sans',sans-serif;
+      letter-spacing:-0.04em;
+    }
+
+    .noise{
+      position:fixed;
+      inset:0;
+      opacity:0.03;
+      pointer-events:none;
+      background-image:url("https://grainy-gradients.vercel.app/noise.svg");
+      z-index:0;
+    }
+
+    .container-main{
+      width:min(1350px,92%);
+      margin:auto;
+      position:relative;
+      z-index:2;
+    }
+
+    .hero{
+      padding-top:110px;
+      padding-bottom:60px;
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+
+      padding:10px 18px;
+
+      border:1px solid var(--line);
+
+      border-radius:999px;
+
+      background:rgba(255,255,255,0.03);
+
+      backdrop-filter:blur(10px);
+
+      color:#c7d2fe;
+
+      font-size:13px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+    }
+
+    .title{
+      font-size:clamp(3rem,8vw,6.5rem);
+      line-height:0.95;
+      margin-top:28px;
+      max-width:900px;
+    }
+
+    .subtitle{
+      margin-top:26px;
+      max-width:700px;
+      color:var(--muted);
+      font-size:1.08rem;
+      line-height:1.9;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:1.7fr 0.8fr;
+      gap:28px;
+      margin-top:60px;
+    }
+
+    .panel{
+      position:relative;
+
+      background:linear-gradient(
+      180deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.02));
+
+      border:1px solid var(--line);
+
+      border-radius:var(--radius);
+
+      padding:30px;
+
+      overflow:hidden;
+
+      backdrop-filter:blur(20px);
+    }
+
+    .panel::before{
+      content:"";
+      position:absolute;
+      inset:0;
+
+      background:
+      linear-gradient(
+      135deg,
+      rgba(255,255,255,0.06),
+      transparent 40%);
+
+      pointer-events:none;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+
+    .search{
+      width:100%;
+      margin-top:24px;
+      display:flex;
+      gap:14px;
+    }
+
+    .input{
+      width:100%;
+
+      background:var(--surface);
+
+      border:1px solid rgba(255,255,255,0.06);
+
+      border-radius:22px;
+
+      padding:18px 20px;
+
+      color:white;
+
+      outline:none;
+
+      transition:0.35s ease;
+    }
+
+    .input:focus{
+      border-color:rgba(138,180,255,0.4);
+      box-shadow:0 0 0 4px rgba(138,180,255,0.08);
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+
+      border-radius:22px;
+
+      padding:16px 22px;
+
+      font-weight:600;
+
+      transition:0.35s ease;
+    }
+
+    .btn-primary{
+      background:linear-gradient(
+      135deg,
+      #dbeafe,
+      #8ab4ff);
+
+      color:#06111f;
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-2px);
+      box-shadow:0 20px 40px rgba(138,180,255,0.18);
+    }
+
+    .btn-secondary{
+      background:rgba(255,255,255,0.04);
+      color:white;
+      border:1px solid rgba(255,255,255,0.05);
+    }
+
+    .btn-secondary:hover{
+      background:rgba(255,255,255,0.08);
+    }
+
+    .cards{
+      margin-top:34px;
+
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:18px;
+    }
+
+    .card{
+      position:relative;
+
+      padding:22px;
+
+      border-radius:24px;
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.02));
+
+      border:1px solid rgba(255,255,255,0.06);
+
+      overflow:hidden;
+
+      transition:0.45s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .card:hover{
+      transform:translateY(-6px);
+      border-color:rgba(138,180,255,0.25);
+    }
+
+    .card::after{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:radial-gradient(circle,
+      rgba(138,180,255,0.12),
+      transparent 50%);
+      opacity:0;
+      transition:0.5s;
+    }
+
+    .card:hover::after{
+      opacity:1;
+    }
+
+    .favicon{
+      width:48px;
+      height:48px;
+      border-radius:14px;
+      background:#0b1017;
+      padding:8px;
+      border:1px solid rgba(255,255,255,0.05);
+    }
+
+    .card-top{
+      display:flex;
+      align-items:flex-start;
+      gap:16px;
+    }
+
+    .card-title{
+      font-size:1rem;
+      font-weight:700;
+      line-height:1.4;
+    }
+
+    .tag{
+      margin-top:12px;
+
+      display:inline-flex;
+
+      padding:8px 14px;
+
+      border-radius:999px;
+
+      background:rgba(138,180,255,0.08);
+
+      color:#cfe0ff;
+
+      font-size:12px;
+
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+    }
+
+    .url{
+      margin-top:20px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.7;
+      word-break:break-all;
+    }
+
+    .floating{
+      position:sticky;
+      top:30px;
+    }
+
+    .toast{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+
+      background:#10151f;
+
+      border:1px solid rgba(255,255,255,0.08);
+
+      color:white;
+
+      padding:18px 22px;
+
+      border-radius:20px;
+
+      opacity:0;
+      transform:translateY(20px);
+
+      transition:0.4s ease;
+
+      z-index:999;
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .import-zone{
+
+      margin-top:28px;
+
+      padding:28px;
+
+      border-radius:26px;
+
+      border:1px dashed rgba(255,255,255,0.12);
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(255,255,255,0.03),
+      rgba(255,255,255,0.015));
+
+      text-align:center;
+
+      transition:
+      transform 0.35s ease,
+      border-color 0.35s ease,
+      background 0.35s ease,
+      box-shadow 0.35s ease;
+
+    }
+
+    .import-zone:hover{
+
+      border-color:
+      rgba(138,180,255,0.35);
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(138,180,255,0.05),
+      rgba(255,255,255,0.02));
+
+    }
+
+    .import-zone.dragover{
+
+      transform:scale(1.02);
+
+      border-color:#8ab4ff;
+
+      box-shadow:
+      0 20px 60px
+      rgba(138,180,255,0.15);
+
+    }
+
+    .import-icon{
+
+      width:72px;
+      height:72px;
+
+      margin:auto auto 18px;
+
+      display:grid;
+      place-items:center;
+
+      border-radius:24px;
+
+      font-size:30px;
+
+      background:
+      linear-gradient(
+      135deg,
+      rgba(138,180,255,0.16),
+      rgba(255,255,255,0.03));
+
+      border:
+      1px solid rgba(255,255,255,0.05);
+
+    }
+
     @media(max-width:980px){
-      .layout{grid-template-columns:1fr;}
-      .hero{padding-top:70px;}
-      .title{font-size:3.5rem;}
-      .search{flex-direction:column;}
+
+      .layout{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        padding-top:70px;
+      }
+
+      .title{
+        font-size:3.5rem;
+      }
+
+      .search{
+        flex-direction:column;
+      }
+
     }
+
   </style>
 </head>
 
 <body>
+
 <div class="noise"></div>
+
 <div class="container-main">
+
   <section class="hero">
-    <div class="eyebrow">✦ Vault Experience</div>
-    <h1 class="title">Organisez votre web avec élégance.</h1>
-    <p class="subtitle">Une bibliothèque premium pour centraliser vos favoris, vos outils et vos plateformes dans une interface fluide, minimaliste et pensée comme une véritable application moderne.</p>
+
+    <div class="eyebrow">
+      ✦ Vault Experience
+    </div>
+
+    <h1 class="title">
+      Organisez votre web avec élégance.
+    </h1>
+
+    <p class="subtitle">
+      Une bibliothèque premium pour centraliser vos favoris,
+      vos outils et vos plateformes dans une interface fluide,
+      minimaliste et pensée comme une véritable application moderne.
+    </p>
+
   </section>
 
   <section class="layout">
+
     <div class="panel">
+
       <div class="topbar">
+
         <div>
-          <p style="color:var(--muted);font-size:14px;">Bibliothèque personnelle</p>
-          <h2 style="margin-top:10px;font-size:2rem;">Vos favoris</h2>
+          <p style="color:var(--muted);font-size:14px;">
+            Bibliothèque personnelle
+          </p>
+
+          <h2 style="margin-top:10px;font-size:2rem;">
+            Vos favoris
+          </h2>
         </div>
-        <div id="bookmarkCount" class="tag">0 favoris</div>
+
+        <div id="bookmarkCount" class="tag">
+          0 favoris
+        </div>
+
       </div>
 
       <div class="search">
-        <input id="search" class="input" placeholder="Rechercher un site..." type="search">
-        <button id="clearSearch" class="btn btn-secondary">Effacer</button>
+
+        <input
+          id="search"
+          class="input"
+          placeholder="Rechercher un site..."
+          type="search"
+        >
+
+        <button
+          id="clearSearch"
+          class="btn btn-secondary">
+          Effacer
+        </button>
+
       </div>
 
       <div id="cards" class="cards"></div>
+
     </div>
 
     <aside class="panel floating">
-      <h2 style="font-size:2rem;">Ajouter un lien</h2>
-      <p style="margin-top:12px;color:var(--muted);line-height:1.8;">Ajoutez rapidement un nouveau site à votre collection.</p>
+
+      <h2 style="font-size:2rem;">
+        Ajouter un lien
+      </h2>
+
+      <p style="margin-top:12px;color:var(--muted);line-height:1.8;">
+        Ajoutez rapidement un nouveau site à votre collection.
+      </p>
 
       <form id="addForm" style="margin-top:30px;display:flex;flex-direction:column;gap:14px;">
-        <input id="title" class="input" placeholder="Nom du site" required>
-        <input id="url" class="input" placeholder="https://..." required>
-        <input id="category" class="input" placeholder="Catégorie">
-        <button type="submit" class="btn btn-primary">Ajouter le favori</button>
+
+        <input
+          id="title"
+          class="input"
+          placeholder="Nom du site"
+          required
+        >
+
+        <input
+          id="url"
+          class="input"
+          placeholder="https://..."
+          required
+        >
+
+        <input
+          id="category"
+          class="input"
+          placeholder="Catégorie"
+        >
+
+        <button
+          type="submit"
+          class="btn btn-primary">
+
+          Ajouter le favori
+
+        </button>
+
       </form>
 
       <div class="import-zone" id="importZone">
-        <div class="import-icon">⭳</div>
-        <h3 style="font-size:1.1rem;font-weight:700;">Importer des favoris</h3>
-        <p style="margin-top:10px;color:var(--muted);line-height:1.7;font-size:14px;">HTML Chrome/Edge/Firefox, JSON, TXT.</p>
-        <button id="importBtn" type="button" class="btn btn-secondary" style="width:100%;margin-top:20px;">Choisir un fichier</button>
-        <input id="importFile" type="file" accept=".html,.json,.txt" hidden>
+
+        <div class="import-icon">
+          ⭳
+        </div>
+
+        <h3 style="font-size:1.1rem;font-weight:700;">
+          Importer des favoris
+        </h3>
+
+        <p style="
+          margin-top:10px;
+          color:var(--muted);
+          line-height:1.7;
+          font-size:14px;
+        ">
+          HTML Chrome/Edge/Firefox, JSON, TXT et préparation PDF.
+        </p>
+
+        <button
+          id="importBtn"
+          type="button"
+          class="btn btn-secondary"
+          style="
+            width:100%;
+            margin-top:20px;
+          ">
+
+          Choisir un fichier
+
+        </button>
+
+        <input
+          id="importFile"
+          type="file"
+          accept=".html,.json,.txt,.pdf"
+          hidden
+        >
+
       </div>
+
     </aside>
+
   </section>
+
 </div>
 
 <div id="toast" class="toast"></div>
 
-<script type="module">
-  // ============================================
-  // FIREBASE IMPORTS
-  // ============================================
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<script>
 
-  // ============================================
-  // FIREBASE CONFIG - À CONFIGURER DEPUIS ENV
-  // ============================================
-  // IMPORTANT: Utilisez des variables d'environnement en production
-  // Voir: https://firebase.google.com/docs/web/setup
-  const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "YOUR_AUTH_DOMAIN",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "YOUR_STORAGE_BUCKET",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
-  };
+  const STORAGE_KEY = "bookmark_vault_v3";
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+  let items =
+  JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
-  // ============================================
-  // VARIABLES GLOBALES
-  // ============================================
-  let items = [];
-  let useFirebase = false;
+  const cards = document.getElementById("cards");
 
-  // ============================================
-  // AUTHENTIFICATION ANONYME
-  // ============================================
-  signInAnonymously(auth)
-    .then(() => {
-      console.log("✅ Authentification Firebase réussie");
-      useFirebase = true;
-      loadFromFirestore();
-    })
-    .catch((error) => {
-      console.warn("⚠️ Firebase indisponible, utilisation de localStorage:", error.message);
-      useFirebase = false;
-      loadFromLocalStorage();
-    });
+  function save(){
 
-  // ============================================
-  // CHARGER DEPUIS FIRESTORE
-  // ============================================
-  async function loadFromFirestore() {
-    try {
-      const snapshot = await getDocs(collection(db, "bookmarks"));
-      items = [];
-      snapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() });
-      });
-      console.log("📚 Favoris chargés depuis Firestore:", items.length);
-      render();
-    } catch (error) {
-      console.error("Erreur Firestore:", error);
-      loadFromLocalStorage();
-    }
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(items)
+    );
+
   }
 
-  // ============================================
-  // CHARGER DEPUIS LOCALSTORAGE (Fallback)
-  // ============================================
-  function loadFromLocalStorage() {
-    const STORAGE_KEY = "bookmark_vault_v3";
-    items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    console.log("💾 Favoris chargés depuis localStorage:", items.length);
-    render();
-  }
+  function toast(message){
 
-  // ============================================
-  // SAUVEGARDER UN FAVORI
-  // ============================================
-  async function save(newItem) {
-    if (useFirebase) {
-      try {
-        await addDoc(collection(db, "bookmarks"), newItem);
-        console.log("✅ Favori sauvegardé dans Firestore");
-        loadFromFirestore();
-      } catch (error) {
-        console.error("Erreur Firestore:", error);
-        saveToLocalStorage(newItem);
-      }
-    } else {
-      saveToLocalStorage(newItem);
-    }
-  }
-
-  function saveToLocalStorage(newItem) {
-    const STORAGE_KEY = "bookmark_vault_v3";
-    items.push(newItem);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    console.log("💾 Favori sauvegardé dans localStorage");
-    render();
-  }
-
-  // ============================================
-  // SUPPRIMER UN FAVORI
-  // ============================================
-  async function deleteBookmark(bookmarkId) {
-    if (useFirebase) {
-      try {
-        await deleteDoc(doc(db, "bookmarks", bookmarkId));
-        console.log("🗑️ Favori supprimé de Firestore");
-        loadFromFirestore();
-      } catch (error) {
-        console.error("Erreur suppression:", error);
-      }
-    } else {
-      items = items.filter(item => item.id !== bookmarkId);
-      localStorage.setItem("bookmark_vault_v3", JSON.stringify(items));
-      console.log("🗑️ Favori supprimé de localStorage");
-      render();
-    }
-  }
-
-  // ============================================
-  // UTILITAIRES
-  // ============================================
-  function toast(message) {
     const el = document.getElementById("toast");
+
     el.textContent = message;
+
     el.classList.add("show");
-    setTimeout(() => el.classList.remove("show"), 2500);
+
+    setTimeout(() => {
+      el.classList.remove("show");
+    },2500);
+
   }
 
-  function favicon(url) {
-    try {
-      const domain = new URL(url).hostname;
+  function favicon(url){
+
+    try{
+
+      const domain =
+      new URL(url).hostname;
+
       return `https://www.google.com/s2/favicons?sz=128&domain=${domain}`;
-    } catch {
+
+    }catch{
+
       return "";
+
     }
+
   }
 
-  // ✅ SÉCURITÉ: Échapper les caractères HTML dangereux
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
+  function render(filter=""){
 
-  function render(filter = "") {
-    const cards = document.getElementById("cards");
     cards.innerHTML = "";
 
-    const filtered = items.filter(item => {
-      const text = (
-        (item.title || "") +
-        (item.url || "") +
-        (item.category || "")
+    const filtered =
+    items.filter(item => {
+
+      const text =
+      (
+      item.title +
+      item.url +
+      item.category
       ).toLowerCase();
+
       return text.includes(filter.toLowerCase());
+
     });
 
-    document.getElementById("bookmarkCount").textContent = `${filtered.length} favoris`;
+    document.getElementById("bookmarkCount")
+    .textContent =
+    `${filtered.length} favoris`;
 
-    if (!filtered.length) {
-      const emptyCard = document.createElement("div");
-      emptyCard.className = "card";
-      const p = document.createElement("p");
-      p.style.color = "var(--muted)";
-      p.textContent = "Aucun favori trouvé.";
-      emptyCard.appendChild(p);
-      cards.appendChild(emptyCard);
+    if(!filtered.length){
+
+      cards.innerHTML = `
+      <div class="card">
+        <p style="color:var(--muted);">
+          Aucun favori trouvé.
+        </p>
+      </div>
+      `;
+
       return;
+
     }
 
     filtered.forEach(item => {
-      const card = document.createElement("div");
+
+      const card = document.createElement("a");
+
       card.className = "card";
-      
-      // Créer le contenu de la carte de manière sécurisée
-      const cardContent = document.createElement("div");
-      cardContent.className = "card-content";
-      
-      // Card top
-      const cardTop = document.createElement("div");
-      cardTop.className = "card-top";
-      
-      const img = document.createElement("img");
-      img.className = "favicon";
-      img.src = favicon(item.url);
-      img.alt = "favicon";
-      
-      const titleDiv = document.createElement("div");
-      
-      const titleSpan = document.createElement("div");
-      titleSpan.className = "card-title";
-      titleSpan.textContent = item.title; // ✅ textContent = pas d'XSS
-      
-      const tag = document.createElement("div");
-      tag.className = "tag";
-      tag.textContent = item.category || "Divers";
-      
-      titleDiv.appendChild(titleSpan);
-      titleDiv.appendChild(tag);
-      
-      cardTop.appendChild(img);
-      cardTop.appendChild(titleDiv);
-      
-      // URL
-      const urlDiv = document.createElement("div");
-      urlDiv.className = "url";
-      urlDiv.textContent = item.url; // ✅ textContent = pas d'XSS
-      
-      cardContent.appendChild(cardTop);
-      cardContent.appendChild(urlDiv);
-      
-      // Card actions
-      const cardActions = document.createElement("div");
-      cardActions.className = "card-actions";
-      
-      const visitLink = document.createElement("a");
-      visitLink.href = item.url;
-      visitLink.target = "_blank";
-      visitLink.rel = "noopener noreferrer"; // ✅ Sécurité: empêcher l'accès à window.opener
-      visitLink.className = "btn btn-primary";
-      visitLink.style.flex = "1";
-      visitLink.style.textDecoration = "none";
-      visitLink.textContent = "Visiter";
-      
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "btn btn-danger";
-      deleteBtn.textContent = "Supprimer";
-      // ✅ SÉCURITÉ: Utiliser addEventListener au lieu d'onclick avec interpolation
-      deleteBtn.addEventListener("click", () => {
-        deleteBookmark(item.id);
-      });
-      
-      cardActions.appendChild(visitLink);
-      cardActions.appendChild(deleteBtn);
-      
-      card.appendChild(cardContent);
-      card.appendChild(cardActions);
-      
+
+      card.href = item.url;
+
+      card.target = "_blank";
+
+      card.innerHTML = `
+
+      <div class="card-top">
+
+        <img
+          class="favicon"
+          src="${favicon(item.url)}"
+        >
+
+        <div>
+
+          <div class="card-title">
+            ${item.title}
+          </div>
+
+          <div class="tag">
+            ${item.category || "Divers"}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="url">
+        ${item.url}
+      </div>
+
+      `;
+
       cards.appendChild(card);
+
     });
+
   }
 
-  // ============================================
-  // EVENT LISTENERS
-  // ============================================
-  document.getElementById("addForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const title = document.getElementById("title").value.trim();
-    let url = document.getElementById("url").value.trim();
-    const category = document.getElementById("category").value.trim();
+  render();
 
-    if (!/^https?:\/\//i.test(url)) {
+  // =====================================================
+  // AJOUT FAVORI
+  // =====================================================
+
+  document
+  .getElementById("addForm")
+  .addEventListener("submit", async e => {
+
+    e.preventDefault();
+
+    const title =
+    document.getElementById("title").value.trim();
+
+    let url =
+    document.getElementById("url").value.trim();
+
+    const category =
+    document.getElementById("category").value.trim();
+
+    if(!/^https?:\/\//i.test(url)){
       url = "https://" + url;
     }
 
     const newBookmark = {
+      id:crypto.randomUUID(),
       title,
       url,
-      category,
-      createdAt: new Date().toISOString()
+      category
     };
 
-    save(newBookmark);
-    e.target.reset();
-    toast("✅ Favori ajouté avec succès");
-  });
+    items.unshift(newBookmark);
 
-  document.getElementById("search").addEventListener("input", e => {
-    render(e.target.value);
-  });
+    save();
 
-  document.getElementById("clearSearch").addEventListener("click", () => {
-    document.getElementById("search").value = "";
     render();
+
+    e.target.reset();
+
+    toast("Favori ajouté avec succès");
+
   });
 
-  // ============================================
+  // =====================================================
+  // SEARCH
+  // =====================================================
+
+  document
+  .getElementById("search")
+  .addEventListener("input", e => {
+
+    render(e.target.value);
+
+  });
+
+  // =====================================================
+  // CLEAR SEARCH
+  // =====================================================
+
+  document
+  .getElementById("clearSearch")
+  .addEventListener("click", () => {
+
+    document.getElementById("search").value = "";
+
+    render();
+
+  });
+
+  // =====================================================
   // IMPORT FAVORIS
-  // ============================================
-  const importBtn = document.getElementById("importBtn");
-  const importFile = document.getElementById("importFile");
-  const importZone = document.getElementById("importZone");
+  // =====================================================
 
-  importBtn.addEventListener("click", () => importFile.click());
+  const importBtn =
+  document.getElementById("importBtn");
 
-  importFile.addEventListener("change", async e => {
+  const importFile =
+  document.getElementById("importFile");
+
+  const importZone =
+  document.getElementById("importZone");
+
+  importBtn.addEventListener("click", () => {
+
+    importFile.click();
+
+  });
+
+  importFile.addEventListener(
+  "change",
+  async e => {
+
     const file = e.target.files[0];
-    if (!file) return;
+
+    if(!file) return;
+
     await handleImport(file);
+
   });
 
-  ["dragenter", "dragover"].forEach(event => {
-    importZone.addEventListener(event, e => {
+  ["dragenter","dragover"]
+  .forEach(event => {
+
+    importZone.addEventListener(
+    event,
+    e => {
+
       e.preventDefault();
-      importZone.classList.add("dragover");
+
+      importZone.classList.add(
+      "dragover");
+
     });
+
   });
 
-  ["dragleave", "drop"].forEach(event => {
-    importZone.addEventListener(event, e => {
+  ["dragleave","drop"]
+  .forEach(event => {
+
+    importZone.addEventListener(
+    event,
+    e => {
+
       e.preventDefault();
-      importZone.classList.remove("dragover");
+
+      importZone.classList.remove(
+      "dragover");
+
     });
+
   });
 
-  importZone.addEventListener("drop", async e => {
-    const file = e.dataTransfer.files[0];
-    if (file) await handleImport(file);
-  });
+  importZone.addEventListener(
+  "drop",
+  async e => {
 
-  async function handleImport(file) {
-    const extension = file.name.split(".").pop().toLowerCase();
+    const file =
+    e.dataTransfer.files[0];
 
-    try {
-      if (extension === "html") {
-        toast("📖 Analyse du fichier HTML...");
-        const text = await file.text();
-        const doc = new DOMParser().parseFromString(text, "text/html");
-        const links = doc.querySelectorAll("a");
-        let imported = 0;
+    if(file){
 
-        // Collecter tous les favoris à importer
-        const bookmarksToAdd = [];
-        links.forEach(link => {
-          const href = link.href || link.getAttribute("href");
-          if (!href) return;
-          const title = link.textContent.trim() || href;
-          const exists = items.some(i => i.url === href);
-          if (exists) return;
+      await handleImport(file);
 
-          bookmarksToAdd.push({
-            title,
-            url: href,
-            category: "Import HTML",
-            createdAt: new Date().toISOString()
-          });
-        });
-
-        // Ajouter tous les favoris en une seule opération
-        for (const bookmark of bookmarksToAdd) {
-          await save(bookmark);
-          imported++;
-        }
-
-        toast(`✅ ${imported} favoris importés`);
-      } else if (extension === "json") {
-        toast("📄 Analyse du fichier JSON...");
-        const text = await file.text();
-        const data = JSON.parse(text);
-        const bookmarks = Array.isArray(data) ? data : data.bookmarks || [];
-        let imported = 0;
-
-        // Collecter tous les favoris à importer
-        const bookmarksToAdd = [];
-        bookmarks.forEach(bookmark => {
-          const exists = items.some(i => i.url === bookmark.url);
-          if (exists) return;
-
-          bookmarksToAdd.push({
-            title: bookmark.title || bookmark.name || "Sans titre",
-            url: bookmark.url || bookmark.href || "",
-            category: bookmark.category || "Import JSON",
-            createdAt: new Date().toISOString()
-          });
-        });
-
-        // Ajouter tous les favoris en une seule opération
-        for (const bookmark of bookmarksToAdd) {
-          await save(bookmark);
-          imported++;
-        }
-
-        toast(`✅ ${imported} favoris importés`);
-      } else if (extension === "txt") {
-        toast("📝 Analyse du fichier TXT...");
-        const text = await file.text();
-        const lines = text.split("\n");
-        let imported = 0;
-
-        // Collecter tous les favoris à importer
-        const bookmarksToAdd = [];
-        lines.forEach(line => {
-          line = line.trim();
-          if (!line || !line.startsWith("http")) return;
-          const exists = items.some(i => i.url === line);
-          if (exists) return;
-
-          bookmarksToAdd.push({
-            title: new URL(line).hostname,
-            url: line,
-            category: "Import TXT",
-            createdAt: new Date().toISOString()
-          });
-        });
-
-        // Ajouter tous les favoris en une seule opération
-        for (const bookmark of bookmarksToAdd) {
-          await save(bookmark);
-          imported++;
-        }
-
-        toast(`✅ ${imported} favoris importés`);
-      }
-    } catch (error) {
-      console.error("Erreur import:", error);
-      toast("❌ Erreur lors de l'import");
     }
+
+  });
+
+  async function handleImport(file){
+
+    const extension =
+    file.name
+    .split(".")
+    .pop()
+    .toLowerCase();
+
+    try{
+
+      if(extension === "html"){
+
+        toast("Analyse du fichier HTML...");
+
+        const text =
+        await file.text();
+
+        const doc =
+        new DOMParser()
+        .parseFromString(
+        text,
+        "text/html"
+        );
+
+        const links =
+        doc.querySelectorAll("a");
+
+        let imported = 0;
+
+        links.forEach(link => {
+
+          const href =
+          link.href ||
+          link.getAttribute("href");
+
+          if(!href) return;
+
+          const title =
+          link.textContent.trim()
+          || href;
+
+          const exists =
+          items.some(
+          i => i.url === href
+          );
+
+          if(exists) return;
+
+          items.unshift({
+
+            id:crypto.randomUUID(),
+
+            title,
+
+            url:href,
+
+            category:"Import HTML"
+
+          });
+
+          imported++;
+
+        });
+
+        save();
+
+        render();
+
+        toast(`✅ ${imported} favoris importés`);
+
+      }else if(extension === "json"){
+
+        toast("Analyse du fichier JSON...");
+
+        const text =
+        await file.text();
+
+        const data =
+        JSON.parse(text);
+
+        const bookmarks =
+        Array.isArray(data)
+        ? data
+        : data.bookmarks || [];
+
+        let imported = 0;
+
+        bookmarks.forEach(bookmark => {
+
+          const exists =
+          items.some(
+          i => i.url === bookmark.url
+          );
+
+          if(exists) return;
+
+          items.unshift({
+
+            id:crypto.randomUUID(),
+
+            title:
+            bookmark.title ||
+            bookmark.name ||
+            "Sans titre",
+
+            url:
+            bookmark.url ||
+            bookmark.href ||
+            "",
+
+            category:
+            bookmark.category ||
+            "Import JSON"
+
+          });
+
+          imported++;
+
+        });
+
+        save();
+
+        render();
+
+        toast(`✅ ${imported} favoris importés`);
+
+      }else if(extension === "txt"){
+
+        toast("Analyse du fichier TXT...");
+
+        const text =
+        await file.text();
+
+        const lines =
+        text.split("\n");
+
+        let imported = 0;
+
+        lines.forEach(line => {
+
+          line = line.trim();
+
+          if(!line ||
+          !line.startsWith("http"))
+          return;
+
+          const exists =
+          items.some(
+          i => i.url === line
+          );
+
+          if(exists) return;
+
+          items.unshift({
+
+            id:crypto.randomUUID(),
+
+            title:
+            new URL(line).hostname,
+
+            url:line,
+
+            category:"Import TXT"
+
+          });
+
+          imported++;
+
+        });
+
+        save();
+
+        render();
+
+        toast(`✅ ${imported} favoris importés`);
+
+      }
+
+    }catch(error){
+
+      console.error(
+      "Erreur import:",
+      error
+      );
+
+      toast("❌ Erreur lors de l'import");
+
+    }
+
   }
 
-  // Expose les fonctions globales
-  window.deleteBookmark = deleteBookmark;
 </script>
 
 </body>
